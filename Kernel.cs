@@ -14,7 +14,7 @@ namespace NclearOS2
 {
     public class Kernel : Sys.Kernel
     {
-        public static string CurrentVersion = "NclearOS 2 Internal Pre-Alpha Version 0.1";
+        public static string CurrentVersion = "NclearOS 2 Version Alpha 0.1";
 
         public static uint screenX = 1280;
         public static uint screenY = 720;

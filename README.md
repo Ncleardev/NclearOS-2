@@ -1,6 +1,6 @@
 ![Logo](https://i.imgur.com/889QgpM.png)
-## Cosmos based operating system written in C# with GUI [Playlist on YT](https://youtube.com/playlist?list=PLjuew_ibisGV2tB8to_ESzlDNQwBTE6yk)
-
+## Cosmos based operating system written in C# with GUI
+## [Playlist on YT](https://youtube.com/playlist?list=PLjuew_ibisGV2tB8to_ESzlDNQwBTE6yk)
 
 
 ### Features

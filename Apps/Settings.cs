@@ -8,6 +8,7 @@ namespace NclearOS2
     public class Settings
     {
         public static int wallpapernum = 1;
+        public static int cursortype = 0;
         public static void Change(string option)
         {
             Kernel.Loading = true;
@@ -36,48 +37,60 @@ namespace NclearOS2
                         Kernel.wallpaper = Kernel.wallpapernew;
                         wallpapernum = 1;
                     }
-                    Msg.Main("Successfully changed background", false);
                     break;
                 case "cursorwhite":
                     Kernel.cursor = new Bitmap(Kernel.CursorWhiteIcon);
                     Kernel.cursorload = new Bitmap(Kernel.CursorWhiteLoad);
-                    Msg.Main("Successfully changed cursor theme", false);
+                    cursortype = 1;
+
                     break;
                 case "cursordark":
                     Kernel.cursor = new Bitmap(Kernel.CursorIcon);
                     Kernel.cursorload = new Bitmap(Kernel.CursorLoad);
-                    Msg.Main("Successfully changed cursor theme", false);
+                    cursortype = 0;
+
                     break;
                 case "default":
                     Kernel.SystemPen.Color = Color.SteelBlue;
-                    Msg.Main("Successfully changed theme color", false);
+
                     break;
                 case "red":
                     Kernel.SystemPen.Color = Color.DarkRed;
-                    Msg.Main("Successfully changed theme color", false);
+
                     break;
                 case "green":
                     Kernel.SystemPen.Color = Color.Green;
-                    Msg.Main("Successfully changed theme color", false);
+
                     break;
                 case "yellow":
                     Kernel.SystemPen.Color = Color.Goldenrod;
-                    Msg.Main("Successfully changed theme color", false);
+
                     break;
                 case "darkblue":
                     Kernel.SystemPen.Color = Color.MidnightBlue;
-                    Msg.Main("Successfully changed theme color", false);
+
                     break;
                 case "gray":
                     Kernel.SystemPen.Color = Color.FromArgb(40, 40, 40);
-                    Msg.Main("Successfully changed theme color", false);
+
                     break;
                 case "black":
                     Kernel.SystemPen.Color = Color.Black;
-                    Msg.Main("Successfully changed theme color", false);
+
+                    break;
+                case "res":
+                    CommandExecute.result = "Usage: set res WidthxHeight     Optional: set res WidthxHeight@ColorDepth\nExamples: set res 1920x1080     set res 1920x1080@32\nAvailable resolutions: ";
+                    foreach (var i in Kernel.canvas.AvailableModes)
+                    {
+                        CommandExecute.result += "\n" + i;
+                    }
+                    break;
+                case { } when option.StartsWith("res "):
+                    CommandExecute.result = Kernel.SetRes(option[4..]);
+                    Process.Run(Process.Apps.console);
                     break;
                 default:
-                    Msg.Main("Error, type settings for help", true);
+                    Msg.Main("Error, type set for help", true);
                     break;
             }
             Kernel.Loading = false;

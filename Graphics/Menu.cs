@@ -1,5 +1,4 @@
-﻿using Cosmos.HAL;
-using Cosmos.System;
+﻿using Cosmos.System;
 using Cosmos.System.Graphics;
 
 namespace NclearOS2
@@ -10,25 +9,26 @@ namespace NclearOS2
         public static void Update()
         {
             Kernel.canvas.DrawFilledRectangle(Kernel.SystemPen, 0, (int)Kernel.screenY - 30, (int)Kernel.screenX, 30);
-            Kernel.canvas.DrawString(Date.CurrentTime(true), Kernel.font, Kernel.WhitePen, 1200, 700);
-            if (MouseManager.Y > Kernel.screenY - 30 && MouseManager.X < 34)
+            Kernel.canvas.DrawString(Date.CurrentTime(true), Kernel.font, Kernel.WhitePen, (int)Kernel.screenX-70, (int)Kernel.screenY - 20);
+            if (MouseManager.Y > Kernel.screenY - 30)
             {
-                if (Kernel.Pressed)
+                if(MouseManager.X < 34)
                 {
-                    Kernel.canvas.DrawImageAlpha(Kernel.start2, 10, (int)Kernel.screenY - 28);
-                    Opened = !Opened;
+                    if (Kernel.Pressed)
+                    { Opened = !Opened; }
+                    
                 }
-                else
+                else if(MouseManager.X > (int)Kernel.screenX - 80)
                 {
-                    Kernel.canvas.DrawImageAlpha(Kernel.start2, 10, (int)Kernel.screenY - 25);
+                    if (Kernel.Pressed)
+                    { Process.Run(Process.Apps.date);
+                    }
+                    else { Kernel.canvas.DrawString(Date.CurrentDate(true, false), Kernel.font, Kernel.WhitePen, (int)Kernel.screenX - 200, (int)Kernel.screenY - 40); }
                 }
-            }
-            else
-            {
-                Kernel.canvas.DrawImageAlpha(Kernel.start, 10, (int)Kernel.screenY - 28);
             }
             if (Opened)
             {
+                Kernel.canvas.DrawImageAlpha(Kernel.start2, 5, (int)Kernel.screenY - 27);
                 Kernel.canvas.DrawFilledRectangle(Kernel.SystemPen, 0, (int)Kernel.screenY - 340, 250, 310);
                 Kernel.canvas.DrawImageAlpha(Kernel.settings, 10, (int)Kernel.screenY - 330);
                 Kernel.canvas.DrawString("Settings", Kernel.font, Kernel.WhitePen, 40, (int)Kernel.screenY - 325);
@@ -44,6 +44,9 @@ namespace NclearOS2
 
                 Kernel.canvas.DrawImageAlpha(Kernel.sysinfo, 10, (int)Kernel.screenY - 210);
                 Kernel.canvas.DrawString("System Info", Kernel.font, Kernel.WhitePen, 40, (int)Kernel.screenY - 205);
+
+                //Kernel.canvas.DrawImageAlpha(Kernel.program, 10, (int)Kernel.screenY - 180);
+                //Kernel.canvas.DrawString("Date", Kernel.font, Kernel.WhitePen, 40, (int)Kernel.screenY - 175);
 
                 Kernel.canvas.DrawImageAlpha(Kernel.lockicon, 10, (int)Kernel.screenY - 120);
                 Kernel.canvas.DrawString("Lock", Kernel.font, Kernel.WhitePen, 40, (int)Kernel.screenY - 115);
@@ -64,41 +67,30 @@ namespace NclearOS2
 
                         if (MouseManager.Y < (int)Kernel.screenY - 300)
                         {
-                            Process.Reset();
-                            Process.settings = true;
-                            Window.Init("Settings", 300, 300, Kernel.settings, true);
+                            Process.Run(Process.Apps.settings);
                             Opened = false;
                         }
                         else if (MouseManager.Y < (int)Kernel.screenY - 270)
                         {
-                            Process.Reset();
-                            Process.notepad = true;
-                            Window.Init("Notepad", (int)(Kernel.screenX - 150), (int)(Kernel.screenY - 150), Kernel.notepad, true);
+                            Process.Run(Process.Apps.notepad);
                             Opened = false;
                         }
                         else if (MouseManager.Y < (int)Kernel.screenY - 240)
                         {
-                            Process.Reset();
-                            Process.console = true;
-                            Window.Init("Console", (int)(Kernel.screenX - 250), (int)(Kernel.screenY - 150), Kernel.console, true);
+                            Process.Run(Process.Apps.console);
                             Opened = false;
                         }
                         else if (MouseManager.Y < (int)Kernel.screenY - 210)
                         {
-                            Process.Reset();
-                            Process.files = true;
-                            Window.Init("Files", (int)(Kernel.screenX - 150), (int)(Kernel.screenY - 150), Kernel.filesicon, false);
-                            Files.ListDisks();
+                            Process.Run(Process.Apps.files);
                             Opened = false;
-                            Kernel.Loading = false;
                         }
                         else if (MouseManager.Y < (int)Kernel.screenY - 180)
                         {
-                            Process.Reset();
-                            Process.sysinfo = true;
-                            Window.Init("System Info", 500, 200, Kernel.sysinfo, true);
+                            Process.Run(Process.Apps.sysinfo);
                             Opened = false;
                         }
+                        //else if (MouseManager.Y < (int)Kernel.screenY - 150){ Process.Run("Date");}
                         else if (MouseManager.Y < (int)Kernel.screenY - 90 && MouseManager.Y > (int)Kernel.screenY - 120)
                         {
                             Opened = false;
@@ -118,6 +110,8 @@ namespace NclearOS2
                     }
                 }
             }
+            else { Kernel.canvas.DrawImageAlpha(Kernel.start, 5, (int)Kernel.screenY - 27); }
+            if (Window.display) { Kernel.canvas.DrawImageAlpha(Window.icon, Window.StartWindowX + 5, Window.StartWindowY + 3); } //to make sure icon is visible over taskbar (minimized state)
         }
     }
 }

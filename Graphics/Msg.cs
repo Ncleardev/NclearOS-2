@@ -10,7 +10,7 @@ namespace NclearOS2
         public static bool displaymsg;
         public static bool displaymsg2;
         public static bool error;
-        public static void Main(string msg1, bool error1)
+        public static void Main(string msg1, bool error1 = false)
         {
             error = error1;
             msg = msg1;
@@ -27,7 +27,7 @@ namespace NclearOS2
             if (displaymsg)
             {
                 if (error) { Kernel.canvas.DrawFilledRectangle(Kernel.Red2Pen, ((int)(Kernel.screenX - msg.Length * 8) / 2) - 10, (int)(Kernel.screenY - 12) / 2, msg.Length * 8 + 20, 24); }
-                else { Kernel.canvas.DrawFilledRectangle(Kernel.DarkGrayPen, ((int)(Kernel.screenX - msg.Length * 8) / 2) - 10, (int)(Kernel.screenY - 12) / 2, msg.Length * 8 + 20, 24); }
+                else { Kernel.canvas.DrawFilledRectangle(Kernel.DarkPen, ((int)(Kernel.screenX - msg.Length * 8) / 2) - 10, (int)(Kernel.screenY - 12) / 2, msg.Length * 8 + 20, 24); }
                 Kernel.canvas.DrawString(msg, Kernel.font, Kernel.WhitePen, (int)(Kernel.screenX - msg.Length * 8) / 2, (int)(Kernel.screenY - 1) / 2);
             }
             if (displaymsg2)

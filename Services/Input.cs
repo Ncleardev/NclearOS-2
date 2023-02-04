@@ -1,6 +1,7 @@
+using System;
 using Cosmos.System;
-using System.Collections.Generic;
 using Cosmos.System.Graphics;
+using System.Collections.Generic;
 
 namespace NclearOS2
 {
@@ -8,36 +9,94 @@ namespace NclearOS2
     {
         private static List<string> history = new List<string>();
         public static string input;
-        public static int wX;
-        public static int wY;
+        public static bool Inputing;
         public static bool ready;
+        private static bool HistoryOn;
         public static int position = 0;
-        public static Pen TextPen;
 
-        public static void Main()
+        public static void Register(bool HistoryEnabled)
         {
-            KeyEvent keyEvent = null;
-            if (KeyboardManager.TryReadKey(out keyEvent))
+            input = "";
+            Inputing = true;
+            ready = false;
+            HistoryOn = HistoryEnabled;
+            position = 0;
+        }
+
+        public static bool Listener()
+        {
+            if (ready)
+            {
+                ready = false;
+                position = 0;
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        public static void Update(KeyEvent keyEvent)
+        {
+            switch (keyEvent.Key)
+            {
+                case ConsoleKeyEx.LWin:
+                case ConsoleKeyEx.RWin:
+                    Menu.Opened = !Menu.Opened;
+                    return;
+                case ConsoleKeyEx.F12:
+                    Process.Run(Process.Apps.console);
+                    return;
+                case ConsoleKeyEx.F4:
+                    if (KeyboardManager.AltPressed)
+                    {
+                        if (Menu.Opened) { Menu.Opened = false; }
+                        else
+                        {
+                            if (Window.display) { Window.display = false; }
+                            else
+                            { Kernel.Lock = true; }
+                        }
+                    }
+                    return;
+                case ConsoleKeyEx.F5:
+                    if(Process.currentApp == Process.Apps.files && Files.CD != "Computer")
+                    {
+                        Files.RefreshList(true);
+                    }
+                    return;
+                case ConsoleKeyEx.Delete:
+                    if (KeyboardManager.ControlPressed && KeyboardManager.AltPressed) { Cosmos.System.Power.Reboot(); }
+                    return;
+                case ConsoleKeyEx.Escape:
+                    Menu.Opened = false;
+                    return;
+            }
+            if (Inputing)
             {
                 switch (keyEvent.Key)
                 {
                     case ConsoleKeyEx.Escape:
                         input = null;
                         ready = true;
-                        return;
+                        break;
                     case ConsoleKeyEx.Enter:
-                        history.Add(input);
                         ready = true;
-                        return;
+                        if (HistoryOn) { history.Add(input); }
+                        else
+                        {
+                            input += "\n";
+                        }
+                        break;
                     case ConsoleKeyEx.UpArrow:
-                        if (history.Count - position > 0)
+                        if (HistoryOn && history.Count - position > 0)
                         {
                             ++position;
                             input = history[history.Count - position];
                         }
                         break;
                     case ConsoleKeyEx.DownArrow:
-                        if (position > 1)
+                        if (HistoryOn && position > 1)
                         {
                             --position;
                             input = history[history.Count - position];
@@ -50,21 +109,17 @@ namespace NclearOS2
                         }
                         break;
                     case ConsoleKeyEx.F1:
-                        input = "help";
-                        ready = true;
-                        return;
+                        if (HistoryOn)
+                        {
+                            input = "help";
+                            ready = true;
+                        }
+                        break;
                     default:
-                        input += keyEvent.KeyChar;
+                        if(char.IsLetterOrDigit(keyEvent.KeyChar) || char.IsPunctuation(keyEvent.KeyChar) || char.IsSymbol(keyEvent.KeyChar) || (keyEvent.KeyChar == ' '))
+                        { input += keyEvent.KeyChar; }
                         break;
                 }
-            }
-
-        }
-        public static void Update()
-        {
-            if (Window.display)
-            {
-                Window.DisplayText(input, wX, wY, TextPen);
             }
         }
     }

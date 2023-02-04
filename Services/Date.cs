@@ -5,6 +5,12 @@ namespace NclearOS2
 {
     public static class Date
     {
+        public static void Update(int StartX, int StartY, int x, int y)
+        {
+            Kernel.canvas.DrawFilledRectangle(Kernel.DarkPen, StartX, StartY, x, y);
+            Kernel.canvas.DrawString(CurrentTime(true), Kernel.font, Kernel.GreenPen, StartX + x - (x/2)-50, StartY+10);
+            Kernel.canvas.DrawString(CurrentDate(true, true), Kernel.font, Kernel.WhitePen, StartX + x - (x / 2) - 100, StartY+25);
+        }
         public static string CurrentDate(bool DisplayWeekday, bool DisplayYear)
         {
             string Weekday = "";

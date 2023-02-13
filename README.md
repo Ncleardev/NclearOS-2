@@ -2,7 +2,7 @@
 ## Cosmos based operating system written in C# with GUI
 ## [Playlist on YT](https://youtube.com/playlist?list=PLjuew_ibisGV2tB8to_ESzlDNQwBTE6yk)
 ## [Website](https://ncleardev.github.io/nclearos)
-## [FAQ](https://ncleardev.github.io/nclearos-faq)
+## [Installation, System Requriments](https://ncleardev.github.io/nclearos-faq)
 
 ### Features
 - User-friendly graphical user interface

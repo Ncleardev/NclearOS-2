@@ -1,1 +1,140 @@
-test
+<!DOCTYPE html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="Keywords" content="nclear, nclearos, nclearos2, cosmosos">
+    <meta name="Description" content="NclearOS 2 Website">
+    <title>NclearOS 2</title>
+    <link href="style.css" rel="stylesheet">
+    <link rel="icon" href="https://raw.githubusercontent.com/Ncleardev/Ncleardev.github.io/main/files/ico.png">
+</head>
+
+<body>
+    <div class="topnav">
+        <text style="position: absolute; left: 47%; top: 5px; text-shadow: white 0 0 5px;">NclearOS 2</text>
+        <a href="#download">Download</a>
+        <a href="#about">Features</a>
+        <a href="#help">FAQ</a>
+    </div>
+    <img src="files/WallpaperNew.png" id="main">
+    <div class="center" style="transform: translateY(-20vw);">
+        <text>
+            <div class="center" id="download"><a href="https://www.gocosmos.org/" target="_blank">Cosmos</a><b> based
+                    Operating System</b></div>
+            <div class="center" style="margin-top: 20vw; margin-bottom: 20px;"><a
+                    href="https://github.com/Ncleardev/NclearOS-2/releases/latest" class="glowL"
+                    target="_blank">Download</a><a href="https://github.com/Ncleardev/NclearOS-2/" class="glow"
+                    target="_blank">Source Code</a><a href="https://github.com/Ncleardev/NclearOS-2/releases/tag/v0.3.0"
+                    class="glowR" target="_blank">
+                    <marquee>Download Pre-release</marquee>
+                </a></div>
+            <div class="center" id="about"><img
+                    src="https://camo.githubusercontent.com/5a3834dc4cb485b1419ec5cd7b267507634bc99fdb87935d8da9876c2fe7db1d/68747470733a2f2f692e696d6775722e636f6d2f6c416577496e542e706e67" id="gallery">
+            </div>
+            <br><br>
+            <div class="center">Graphical user interface<br>
+                File management<br>
+                Notepad app for editing text files<br>
+                Screensaver<br>
+                Advanced startup options and safe mode<br>
+                Multitasking<br>
+                Task Manager<br>
+                Animations<br><br><br></div>
+            <div class="center"><iframe style="border-radius: 20px;" width="80%" height="600"
+                    src="https://www.youtube.com/embed/i4AV2RgCoIE?list=PLjuew_ibisGV2tB8to_ESzlDNQwBTE6yk"
+                    title="NclearOS 2 - operating system created in C# (CosmosOS)" frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowfullscreen></iframe>
+            </div><br><br>
+            <div class="center" id="help">
+                <text>
+                    <button class="accordion">System Requriments for NclearOS 2</button>
+                    <div class="panel">
+                        CPU: x86<br>
+                        RAM: Minimum 128 MB, Recommended 512 MB<br>
+                        Graphics: Minimum VGA, Recommended SVGA<br>
+                        A bootable Pendrive / Optical Disk<br>
+                        Mouse and USB Keyboard (laptop built-in keyboard may not work)
+                    </div><br>
+                    <button class="accordion">Running NclearOS 2 on VMware</button>
+                    <div class="panel">
+                        1. Download the <a target="_blank"
+                            href="https://github.com/Ncleardev/NclearOS-2/releases/latest">NclearOS2</a>
+                        .iso file from GitHub<br>
+                        2. Launch VMware Player/Workstation.<br>
+                        3. Proceed with steps provided on <a target="_blank"
+                            href="https://kb.vmware.com/s/article/1002">this
+                            site</a><br>
+                        4. Start virtual machine.<br>
+                        If you want OS to work with files download <a target="_blank"
+                            href="https://github.com/CosmosOS/Cosmos/blob/master/Build/VMWare/Workstation/Filesystem.vmdk?raw=true">.vmdk
+                            file</a> and use it as a hard disk in VM options.
+                    </div><br>
+                    <button class="accordion">Running NclearOS on VirtualBox</button>
+                    <div class="panel">
+                        1. Download the <a target="_blank"
+                            href="https://github.com/Ncleardev/NclearOS-2/releases/latest">NclearOS2</a>
+                        .iso file from GitHub<br>
+                        2. Launch VirtualBox.<br>
+                        3. Proceed with steps provided on <a target="_blank"
+                            href="https://www.virtualbox.org/manual/UserManual.html#create-vm-wizard">this site</a><br>
+                        4. Start virtual machine.<br>
+                        If you want OS to work with files create new .vhd Virtual Hard Disk file using Virtual Media
+                        Manager in
+                        VirtualBox. Then you need to format it using FAT32 filesystem - one way to do it is by using
+                        Windows built-in
+                        Disk
+                        Management: from top left corner select Action>Attach VHD. Choose VHD file created by
+                        VirtualBox. Initialize it by selecting MBR and add new simple volume.
+                        Detach VHD, run VM and format new disk in NclearOS.
+                    </div><br>
+                    <button class="accordion">Editing NclearOS source code, using source code in own projects</button>
+                    <div class="panel">
+                        NclearOS is completely open source - using the source code in own projects is allowed. Credit is
+                        not required, especially when only a few chunks of code are used.<br>However, if your OS relies
+                        heavily on NclearOS code / is just a modified version, a "Based on NclearOS" credit would be
+                        appreciated - in which case, if you also want to publish your system on github, I'd recommend
+                        creating a fork.<br><br>
+                        To edit the source code:<br>
+                        1. Make sure Visual Studio and Cosmos are installed.<br>
+                        2. Create new CosmosOS project in Visual Studio.<br>
+                        3. Download <a target="_blank"
+                            href="https://github.com/Ncleardev/NclearOS-2/archive/refs/heads/main.zip">NclearOS2</a>
+                        source code.<br>
+                        4. Extract files from .zip to %USERPROFILE%\source\repos\(your project name)<br>
+                        5. Also remove the original Kernel.cs<br><br>
+                        Final result:<br>
+                        <img src="https://i.imgur.com/qVqoW1N.png"><br>
+                        All files located in Resources folder needs to be selected as Embedded resource<br>
+                        <img src="https://i.imgur.com/ZqOQn2m.png"><br>
+                        <p>Replace NclearOS2 to *your project name* in lines 96 - 142 in Kernel.cs</p><br>
+                        <img src="https://i.imgur.com/CE9pa5Q.png">
+                    </div>
+                </text>
+            </div>
+            <br><br>
+            <p><a href="https://ncleardev.github.io/" target="_blank">Nclear</a></p>
+            <a href="#main"
+                style="text-decoration: none; float: right; background-color: rgba(255, 255, 255, 0.5); padding-left: 15px; padding-right: 15px; padding-top: 10px; padding-bottom: 10px; border-radius: 50%; margin-right: 30px;">/\</a>
+        </text>
+    </div>
+</body>
+
+</html>
+<script>
+    var acc = document.getElementsByClassName("accordion");
+    var i;
+
+    for (i = 0; i < acc.length; i++) {
+        acc[i].addEventListener("click", function () {
+            this.classList.toggle("active");
+            var panel = this.nextElementSibling;
+            if (panel.style.maxHeight) {
+                panel.style.maxHeight = null;
+            } else {
+                panel.style.maxHeight = panel.scrollHeight + "px";
+            }
+        });
+    }
+</script>

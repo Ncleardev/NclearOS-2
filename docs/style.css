@@ -1,0 +1,173 @@
+body {
+  font-family: 'bahnschrift', arial;
+  font-size: x-large;
+  background-color: #004dff;
+  color: white;
+  margin: 0;
+}
+
+html{
+  scroll-behavior: smooth;
+}
+
+a:link,
+a:visited {
+  color: white;
+  transition: 1s all;
+}
+
+a:hover {
+  color: lime;
+  transition: 0s all;
+}
+
+a:active {
+  color: rgb(69, 0, 255);
+  transition: 0s all;
+}
+
+#main {
+  width: 100%;
+  z-index: -1;
+}
+
+text,
+a,
+marquee,
+b,
+img,
+.topnav {
+  text-align: center;
+  animation: q 2s linear;
+  word-wrap: break-word;
+  max-width: 100%;
+}
+
+@keyframes q {
+  0% {
+    opacity: 0;
+  }
+
+  70% {
+    opacity: 0;
+  }
+
+  100% {
+    opacity: 1;
+  }
+}
+
+.topnav a:hover,
+.glowL:hover,
+.glowR:hover,
+.glow:hover {
+  color: white;
+  text-shadow: 0 0 10px white;
+
+  transition: 0.4s all;
+}
+
+.topnav a:hover {
+  transform: translate(2px, 2px);
+}
+
+.glowR:hover {
+  transform: translateY(-20px) perspective(1000px) rotateY(-20deg);
+}
+
+.glowL:hover {
+  transform: translateY(-20px) perspective(1000px) rotateY(20deg);
+}
+
+.glow:hover {
+  transform: translateY(-20px);
+}
+
+.topnav {
+  overflow: hidden;
+  width: 100%;
+  padding: auto;
+  position: fixed;
+  top: 0;
+  z-index: 999;
+
+  backdrop-filter: blur(2px);
+  background-color: rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.topnav a {
+  float: left;
+  font-size: 16px;
+
+  text-decoration: none;
+  color: black;
+  text-align: center;
+  padding: 10px 10px;
+  transition: 0.4s all;
+}
+
+.glowL,
+.glowR,
+.glow {
+  display: inline-block;
+  width: 150px;
+  margin: 5px;
+
+  text-decoration: none;
+  color: black;
+  text-align: center;
+  padding: 20px 20px;
+  transition: 0.4s all;
+
+  backdrop-filter: blur(2px);
+  background-color: rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+.glowR{
+  padding: 16px 0px;
+  width: 170px;
+  transform: translateY(4px);
+}
+
+marquee{
+  transform: translateY(4px);
+}
+
+.center {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+#gallery {
+  border-radius: 20px;
+  max-width: 80%;
+  height: auto;
+  -webkit-box-reflect: below 10px linear-gradient(to bottom, rgba(0, 0, 0, 0.0) 70%, rgba(0, 0, 0, 0.4));
+}
+
+
+.accordion {
+  color: white;
+  font-family: 'bahnschrift', arial;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  background-color: transparent;
+  font-size: xx-large;
+  transition: 1s all;
+}
+
+.active,
+.accordion:hover {
+  color: lime;
+  transition: 0s all;
+}
+
+.panel {
+  padding: 0 20px;
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.5s ease;
+}

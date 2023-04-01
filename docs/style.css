@@ -4,6 +4,7 @@ body {
   background-color: #004dff;
   color: white;
   margin: 0;
+  text-shadow: 0 0 10px white;
 }
 
 html{
@@ -18,11 +19,13 @@ a:visited {
 
 a:hover {
   color: lime;
+  text-shadow: 0 0 10px lime;
   transition: 0s all;
 }
 
 a:active {
   color: rgb(69, 0, 255);
+  text-shadow: none;
   transition: 0s all;
 }
 
@@ -99,6 +102,7 @@ img,
 .topnav a {
   float: left;
   font-size: 16px;
+  text-shadow: none;
 
   text-decoration: none;
   color: black;
@@ -113,6 +117,7 @@ img,
   display: inline-block;
   width: 150px;
   margin: 5px;
+  text-shadow: none;
 
   text-decoration: none;
   color: black;
@@ -141,15 +146,15 @@ marquee{
 }
 
 #gallery {
-  border-radius: 20px;
+  border-radius: 15px;
   max-width: 80%;
   height: auto;
   -webkit-box-reflect: below 10px linear-gradient(to bottom, rgba(0, 0, 0, 0.0) 70%, rgba(0, 0, 0, 0.4));
 }
 
-
 .accordion {
   color: white;
+  text-shadow: 0 0 10px white;
   font-family: 'bahnschrift', arial;
   cursor: pointer;
   border: none;
@@ -162,6 +167,7 @@ marquee{
 .active,
 .accordion:hover {
   color: lime;
+  text-shadow: 0 0 10px lime;
   transition: 0s all;
 }
 
@@ -170,4 +176,35 @@ marquee{
   max-height: 0;
   overflow: hidden;
   transition: max-height 0.5s ease;
+}
+
+ul{
+  width: min(90%, 50rem);
+  margin: auto;
+  list-style: none;
+  display: grid;
+  row-gap: 2rem;
+}
+
+ul li.card{
+  position: relative;
+  padding: 1.5rem;
+  background-image: linear-gradient(to right, rgba(255, 255, 255, 0.5), transparent);
+  border-radius: 15px;
+  transform: perspective(1000px) rotateY(30deg);
+  transition: 0.2s all;
+}
+
+ul li.card2{
+  position: relative;
+  padding: 1.5rem;
+  background-image: linear-gradient(to left, rgba(255, 255, 255, 0.5), transparent);
+  border-radius: 15px;
+  transform: perspective(1000px) rotateY(-30deg);
+  transition: 0.2s all;
+}
+
+ul li.card:hover, ul li.card2:hover{
+  background-color: rgba(255, 255, 255, 0.2);
+  transition: 0.2s all;
 }

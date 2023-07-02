@@ -1,5 +1,4 @@
 ![Logo](https://i.imgur.com/889QgpM.png)
-## [v0.3.0 Alpha Pre-release now available, Multitasking, Task Manager, Animations and more!](https://github.com/Ncleardev/NclearOS-2/releases/tag/v0.3.0)
 ## Cosmos based operating system written in C# with GUI
 ## [Playlist on YT](https://youtube.com/playlist?list=PLjuew_ibisGV2tB8to_ESzlDNQwBTE6yk)
 ## [Website](https://ncleardev.github.io/nclearos)
@@ -7,8 +6,11 @@
 
 ### Features
 - User-friendly graphical user interface
-- File management
-- Notepad app for editing text files
+- Powerful Command System
+- Blur effects
+- Text (Console) Mode
+- Performance Watchdog
+- Basic Network capabilities
 - Screensaver
 - Advanced startup options and safe mode
 
@@ -18,7 +20,3 @@
 ![Screenshot](/Screenshots/3.png)
 ![Screenshot](/Screenshots/4.png)
 ![Screenshot](/Screenshots/5.png)
-![Screenshot](/Screenshots/6.png)
-![Screenshot](/Screenshots/7.png)
-![Screenshot](/Screenshots/8.png)
-![Screenshot](/Screenshots/9.png)

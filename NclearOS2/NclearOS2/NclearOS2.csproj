@@ -1,0 +1,114 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net6.0</TargetFramework>
+        <!--<RuntimeIdentifier>cosmos</RuntimeIdentifier>-->
+        <Platform>cosmos</Platform>
+        <SupportsX86Intrinsics>false</SupportsX86Intrinsics>
+        <SelfContained>True</SelfContained>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <EnableGDB>False</EnableGDB>
+        <StartCosmosGDB>False</StartCosmosGDB>
+        <VisualStudioDebugPort>Pipe: Cosmos\Serial</VisualStudioDebugPort>
+        <CosmosDebugPort>Serial: COM1</CosmosDebugPort>
+        <Launch>VMware</Launch>
+        <Profile>VMware</Profile>
+        <Description>Use VMware Player or Workstation to deploy and debug.</Description>
+        <PxeInterface>192.168.0.8</PxeInterface>
+        <RemoveBootDebugOutput>True</RemoveBootDebugOutput>
+        <DebugEnabled>False</DebugEnabled>
+        <VMWareEdition>Player</VMWareEdition>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <None Remove="GUI\Apps\Console\console.bmp" />
+      <None Remove="GUI\Apps\Files\disk.bmp" />
+      <None Remove="GUI\Apps\Files\file.bmp" />
+      <None Remove="GUI\Apps\Files\files.bmp" />
+      <None Remove="GUI\Apps\Notepad\notepad.bmp" />
+      <None Remove="GUI\Apps\Settings\settings.bmp" />
+      <None Remove="GUI\Apps\SysInfo\sysinfo.bmp" />
+      <None Remove="GUI\Resources\Cursors\Cursor.bmp" />
+      <None Remove="GUI\Resources\Cursors\CursorLoad.bmp" />
+      <None Remove="GUI\Resources\Cursors\CursorWhite.bmp" />
+      <None Remove="GUI\Resources\Cursors\CursorWhiteLoad.bmp" />
+      <None Remove="GUI\Resources\UI\check.bmp" />
+      <None Remove="GUI\Resources\UI\check2.bmp" />
+      <None Remove="GUI\Resources\UI\circle.bmp" />
+      <None Remove="GUI\Resources\UI\circle2.bmp" />
+      <None Remove="GUI\Resources\UI\close.bmp" />
+      <None Remove="GUI\Resources\UI\close2.bmp" />
+      <None Remove="GUI\Resources\UI\error.bmp" />
+      <None Remove="GUI\Resources\UI\info.bmp" />
+      <None Remove="GUI\Resources\UI\loading.bmp" />
+      <None Remove="GUI\Resources\UI\minimize.bmp" />
+      <None Remove="GUI\Resources\UI\minimize2.bmp" />
+      <None Remove="GUI\Resources\UI\program.bmp" />
+      <None Remove="GUI\Resources\UI\taskmng.bmp" />
+      <None Remove="GUI\Resources\UI\warn.bmp" />
+      <None Remove="GUI\Resources\Wallpapers\2005s.bmp" />
+      <None Remove="GUI\Resources\Wallpapers\Cosmos.bmp" />
+      <None Remove="GUI\Resources\Wallpapers\Origami.bmp" />
+      <None Remove="GUI\Resources\Wallpapers\Wallpaper.bmp" />
+      <None Remove="GUI\Resources\Wallpapers\WallpaperLock.bmp" />
+      <None Remove="GUI\Resources\Wallpapers\WallpaperOld.bmp" />
+      <None Remove="GUI\Resources\Wallpapers\wallpaperorigami.bmp" />
+      <None Remove="GUI\UI\Menu\connected.bmp" />
+      <None Remove="GUI\UI\Menu\lock.bmp" />
+      <None Remove="GUI\UI\Menu\reboot.bmp" />
+      <None Remove="GUI\UI\Menu\shutdown.bmp" />
+      <None Remove="GUI\UI\Menu\start.bmp" />
+      <None Remove="GUI\UI\Menu\start2.bmp" />
+      <None Remove="GUI\UI\Menu\start3.bmp" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <EmbeddedResource Include="GUI\Apps\Console\console.bmp" />
+      <EmbeddedResource Include="GUI\Apps\Files\disk.bmp" />
+      <EmbeddedResource Include="GUI\Apps\Files\file.bmp" />
+      <EmbeddedResource Include="GUI\Apps\Files\files.bmp" />
+      <EmbeddedResource Include="GUI\Apps\Notepad\notepad.bmp" />
+      <EmbeddedResource Include="GUI\Apps\Settings\settings.bmp" />
+      <EmbeddedResource Include="GUI\Apps\SysInfo\sysinfo.bmp" />
+      <EmbeddedResource Include="GUI\Resources\Cursors\Cursor.bmp" />
+      <EmbeddedResource Include="GUI\Resources\Cursors\CursorLoad.bmp" />
+      <EmbeddedResource Include="GUI\Resources\Cursors\CursorWhite.bmp" />
+      <EmbeddedResource Include="GUI\Resources\Cursors\CursorWhiteLoad.bmp" />
+      <EmbeddedResource Include="GUI\Resources\UI\check.bmp" />
+      <EmbeddedResource Include="GUI\Resources\UI\check2.bmp" />
+      <EmbeddedResource Include="GUI\Resources\UI\circle.bmp" />
+      <EmbeddedResource Include="GUI\Resources\UI\circle2.bmp" />
+      <EmbeddedResource Include="GUI\Resources\UI\close.bmp" />
+      <EmbeddedResource Include="GUI\Resources\UI\close2.bmp" />
+      <EmbeddedResource Include="GUI\Resources\UI\error.bmp" />
+      <EmbeddedResource Include="GUI\Resources\UI\info.bmp" />
+      <EmbeddedResource Include="GUI\Resources\UI\loading.bmp" />
+      <EmbeddedResource Include="GUI\Resources\UI\minimize.bmp" />
+      <EmbeddedResource Include="GUI\Resources\UI\minimize2.bmp" />
+      <EmbeddedResource Include="GUI\Resources\UI\program.bmp" />
+      <EmbeddedResource Include="GUI\Resources\UI\taskmng.bmp" />
+      <EmbeddedResource Include="GUI\Resources\UI\warn.bmp" />
+      <EmbeddedResource Include="GUI\Resources\Wallpapers\2005s.bmp" />
+      <EmbeddedResource Include="GUI\Resources\Wallpapers\Cosmos.bmp" />
+      <EmbeddedResource Include="GUI\Resources\Wallpapers\Origami.bmp" />
+      <EmbeddedResource Include="GUI\Resources\Wallpapers\Wallpaper.bmp" />
+      <EmbeddedResource Include="GUI\Resources\Wallpapers\WallpaperLock.bmp" />
+      <EmbeddedResource Include="GUI\Resources\Wallpapers\WallpaperOld.bmp" />
+      <EmbeddedResource Include="GUI\UI\Menu\connected.bmp" />
+      <EmbeddedResource Include="GUI\UI\Menu\lock.bmp" />
+      <EmbeddedResource Include="GUI\UI\Menu\reboot.bmp" />
+      <EmbeddedResource Include="GUI\UI\Menu\shutdown.bmp" />
+      <EmbeddedResource Include="GUI\UI\Menu\start.bmp" />
+      <EmbeddedResource Include="GUI\UI\Menu\start2.bmp" />
+      <EmbeddedResource Include="GUI\UI\Menu\start3.bmp" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Cosmos.Build" Version="0-*" NoWarn="NU1604" />
+        <PackageReference Include="Cosmos.Debug.Kernel" Version="0-*" NoWarn="NU1604" />
+        <PackageReference Include="Cosmos.System2" Version="0-*" NoWarn="NU1604" />
+    </ItemGroup>
+
+</Project>

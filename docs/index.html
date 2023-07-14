@@ -25,26 +25,26 @@
                     Operating System</b></div>
             <div class="center" style="margin-top: 20vw; margin-bottom: 20px;"><a
                     href="https://github.com/Ncleardev/NclearOS-2/releases/latest" class="glowL"
-                    target="_blank">Download</a><a href="https://github.com/Ncleardev/NclearOS-2/" class="glow"
-                    target="_blank">Source Code</a><a href="https://github.com/Ncleardev/NclearOS-2/releases/tag/v0.3.0"
-                    class="glowR" target="_blank">
-                    <marquee>Download Pre-release</marquee>
-                </a></div>
+                    target="_blank">Download</a><a href="https://github.com/Ncleardev/NclearOS-2/" class="glowR"
+                    target="_blank">Source Code</a>
+                </div>
             <h5>Legacy <a href="https://ncleardev.github.io/nclearos-legacy" target="_blank">NclearOS</a> also available</h5>
             <div class="center" id="about"><img
-                    src="https://camo.githubusercontent.com/5a3834dc4cb485b1419ec5cd7b267507634bc99fdb87935d8da9876c2fe7db1d/68747470733a2f2f692e696d6775722e636f6d2f6c416577496e542e706e67"
+                    src="https://raw.githubusercontent.com/Ncleardev/NclearOS-2/main/Screenshots/1.png"
                     id="gallery">
             </div>
             <br><br>
             <ul>
                 <li class="card">Graphical user interface</li>
-                <li class="card2">File management</li>
-                <li class="card">Notepad app for editing text files</li>
-                <li class="card2">Screensaver</li>
+                <li class="card">Multitasking</li>
+                <li class="card">Powerful Command System</li>
+                <li class="card">Blur effects</li>
+                <li class="card">Text (Console) Mode</li>
+                <li class="card">Performance Watchdog</li>
+                <li class="card">Basic Network capabilities</li>
+                <li class="card">Text (Console) Mode</li>
+                <li class="card">Screensaver</li>
                 <li class="card">Advanced startup options and safe mode</li>
-                <li class="card2">Multitasking</li>
-                <li class="card">Task Manager</li>
-                <li class="card2">Animations</li>
             </ul><br><br>
             <div class="center"><iframe width="730" height="400" style="max-width: 90%;"
                     src="https://www.youtube.com/embed/i4AV2RgCoIE?list=PLjuew_ibisGV2tB8to_ESzlDNQwBTE6yk"
@@ -57,7 +57,7 @@
                     <button class="accordion">System Requriments for NclearOS 2</button>
                     <div class="panel">
                         CPU: x86<br>
-                        RAM: Minimum 128 MB, Recommended 512 MB<br>
+                        RAM: Minimum 256 MB, Recommended 512 MB<br>
                         Graphics: Minimum VGA, Recommended SVGA<br>
                         A bootable Pendrive / Optical Disk<br>
                         Mouse and USB Keyboard (laptop built-in keyboard may not work)
@@ -72,6 +72,7 @@
                             href="https://kb.vmware.com/s/article/1002">this
                             site</a><br>
                         4. Start virtual machine.<br>
+                        <b>At the moment 0.4.0 Pre-release doesn't support Filesystem.</b><br>
                         If you want OS to work with files download <a target="_blank"
                             href="https://github.com/CosmosOS/Cosmos/blob/master/Build/VMWare/Workstation/Filesystem.vmdk?raw=true">.vmdk
                             file</a> and use it as a hard disk in VM options.
@@ -85,6 +86,7 @@
                         3. Proceed with steps provided on <a target="_blank"
                             href="https://www.virtualbox.org/manual/UserManual.html#create-vm-wizard">this site</a><br>
                         4. Start virtual machine.<br>
+                        <b>At the moment 0.4.0 Pre-release doesn't support Filesystem.</b><br>
                         If you want OS to work with files create new .vhd Virtual Hard Disk file using Virtual Media
                         Manager in
                         VirtualBox. Then you need to format it using FAT32 filesystem - one way to do it is by using
@@ -102,19 +104,11 @@
                         appreciated - in which case, if you also want to publish your system on github, I'd recommend
                         creating a fork.<br><br>
                         To edit the source code:<br>
-                        1. Make sure Visual Studio and Cosmos are installed.<br>
-                        2. Create new CosmosOS project in Visual Studio.<br>
-                        3. Download <a target="_blank"
+                        1. Make sure Visual Studio and <a href="https://github.com/CosmosOS/Cosmos/releases/tag/UserKit_20221121">Cosmos User Kit 20221121</a> are installed.<br>
+                        2. Download <a target="_blank"
                             href="https://github.com/Ncleardev/NclearOS-2/archive/refs/heads/main.zip">NclearOS2</a>
                         source code.<br>
-                        4. Extract files from .zip to %USERPROFILE%\source\repos\(your project name)<br>
-                        5. Also remove the original Kernel.cs<br><br>
-                        Final result:<br>
-                        <img src="https://i.imgur.com/qVqoW1N.png"><br>
-                        All files located in Resources folder needs to be selected as Embedded resource<br>
-                        <img src="https://i.imgur.com/ZqOQn2m.png"><br>
-                        <p>Replace NclearOS2 to *your project name* in lines 96 - 142 in Kernel.cs</p><br>
-                        <img src="https://i.imgur.com/CE9pa5Q.png">
+                        3. Extract downloaded .zip and open .sln file located in folder NclearOS2.
                     </div>
                 </text>
             </div>

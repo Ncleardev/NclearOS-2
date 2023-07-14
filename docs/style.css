@@ -76,15 +76,15 @@ h5,
 }
 
 .glowR:hover {
-  transform: translateY(-20px) perspective(1000px) rotateY(-20deg);
+  transform: translateY(-10px) perspective(1000px) rotateY(-20deg);
 }
 
 .glowL:hover {
-  transform: translateY(-20px) perspective(1000px) rotateY(20deg);
+  transform: translateY(-10px) perspective(1000px) rotateY(20deg);
 }
 
 .glow:hover {
-  transform: translateY(-20px);
+  transform: translateY(-10px);
 }
 
 .topnav {
@@ -129,15 +129,6 @@ h5,
   backdrop-filter: blur(2px);
   background-color: rgba(255, 255, 255, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.15);
-}
-.glowR{
-  padding: 16px 0px;
-  width: 170px;
-  transform: translateY(4px);
-}
-
-marquee{
-  transform: translateY(4px);
 }
 
 .center {
@@ -184,28 +175,18 @@ ul{
   margin: auto;
   list-style: none;
   display: grid;
-  row-gap: 2rem;
+  row-gap: 1.5rem;
 }
 
 ul li.card{
   position: relative;
-  padding: 1.5rem;
+  padding: 1rem;
   background-image: linear-gradient(to right, rgba(255, 255, 255, 0.5), transparent);
-  border-radius: 15px;
-  transform: perspective(1000px) rotateY(30deg);
-  transition: 0.2s all;
-}
-
-ul li.card2{
-  position: relative;
-  padding: 1.5rem;
-  background-image: linear-gradient(to left, rgba(255, 255, 255, 0.5), transparent);
-  border-radius: 15px;
-  transform: perspective(1000px) rotateY(-30deg);
+  border-radius: 40px;
   transition: 0.2s all;
 }
 
 ul li.card:hover, ul li.card2:hover{
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: rgba(255, 255, 255, 0.3);
   transition: 0.2s all;
 }

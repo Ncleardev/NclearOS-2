@@ -6,6 +6,7 @@
 
 ### Features
 - User-friendly graphical user interface
+- Multitasking
 - Powerful Command System
 - Blur effects
 - Text (Console) Mode

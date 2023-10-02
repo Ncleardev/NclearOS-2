@@ -1,30 +1,24 @@
+using Cosmos.HAL.BlockDevice;
 using Cosmos.System.FileSystem;
 using Cosmos.System.FileSystem.VFS;
+using NclearOS2.GUI;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
-using Sys = Cosmos.System;
 
 namespace NclearOS2
 {
     public static class FileManager
     {
-        public static Sys.FileSystem.CosmosVFS fs = new Sys.FileSystem.CosmosVFS();
+        public static CosmosVFS fs = new CosmosVFS();
         public static List<string> diskList = new();
-        public static string Start(bool showMsg = false)
+        public static string Start(bool showMsg = true)
         {
             try
             {
-                VFSManager.RegisterVFS(fs, true);
-                /*
-                if (!VFSManager.DirectoryExists("0:\\NclearOS"))
-                {
-                    System.Console.WriteLine("Creating System Folder 0:\\NclearOS...");
-                    fs.CreateDirectory("0:\\NclearOS");
-                    System.Console.WriteLine("System Folder created");
-                }*/
+                VFSManager.RegisterVFS(fs);
                 Kernel.useDisks = true;
                 return "Success";
             }
@@ -34,34 +28,6 @@ namespace NclearOS2
                 if (showMsg) { Msg.Main("File System Error", e.ToString(), GUI.Icons.error); }
                 return e.ToString();
             }
-        }
-        public static string ListDisks()
-        {
-            diskList.Clear();
-            try
-            {
-                for (int diskslistnumber = 0; true; diskslistnumber++)
-                {
-                    string label = fs.GetFileSystemLabel(diskslistnumber + ":\\");
-                    string fs_type = fs.GetFileSystemType(diskslistnumber + ":\\");
-                    double space = fs.GetTotalSize(diskslistnumber + ":\\");
-                    double available_space = fs.GetAvailableFreeSpace(diskslistnumber + ":\\");
-                    space = space / 1024f / 1024f;
-                    double used_space = space - (available_space / 1024f / 1024f);
-                    if (label == diskslistnumber + ":\\")
-                    {
-                        diskList.Add(diskslistnumber + ":\\" + new string(' ', 48 - label.Length) + fs_type + " | " + Convert.ToInt32(used_space) + " MB / " + space + " MB");
-                    }
-                    else
-                    {
-                        diskList.Add(diskslistnumber + ":\\ - " + label + new string(' ', 48 - label.Length) + fs_type + " | " + Convert.ToInt32(used_space) + " MB / " + space + " MB");
-                    }
-                }
-            }
-            catch
-            { //Files.disknumbermax = diskList.Count;
-            }
-            return string.Join('\n', diskList.ToArray());
         }
         public static string Open(string path, bool silent = false)
         {
@@ -74,7 +40,6 @@ namespace NclearOS2
                 byte[] text_to_read = new byte[hello_file_stream.Length];
                 hello_file_stream.Read(text_to_read, 0, (int)hello_file_stream.Length);
                 return Encoding.Default.GetString(text_to_read);
-
             }
             return "File access denied";
         }
@@ -94,7 +59,9 @@ namespace NclearOS2
         }
         public static void Save(string path, string toSave, bool silent = false)
         {
-            if (!silent) { GUI.GUI.Wait(); }
+            GUI.GUI.Loading = true;
+            Toast.msg = "Saving " + path + "...";
+            GUI.GUI.Refresh();
             try
             {
                 if (!VFSManager.FileExists(path))
@@ -109,16 +76,18 @@ namespace NclearOS2
                 {
                     byte[] textToWrite = Encoding.ASCII.GetBytes(toSave);
                     helloFileStream.Write(textToWrite, 0, textToWrite.Length);
+                    Toast.msg = "Saved " + path;
                 }
                 else
                 {
-                    //Msg.Main("Error", "Cannot write to " + path, Resources.error);
+                    Msg.Main("Error", "Cannot write to " + path, Icons.error);
                 }
             }
             catch (Exception e)
             {
-                //Msg.Main("Error", "Failed saving " + path + "; " + e, Resources.error);
+                Msg.Main("Error", "Failed saving " + path + "; " + e, Icons.error);
             }
+            GUI.GUI.Loading = false;
         }
         public static void SaveInBytes(string path, byte[] toSave, bool silent = false)
         {
@@ -149,17 +118,17 @@ namespace NclearOS2
         }
         public static void Format(int diskIndex, string format = "FAT32", bool quicky = true)
         {
-            //Toast.msg = "Formatting " + diskIndex + ":\\ - file system " + format + "...";
+            Toast.msg = "Formatting " + diskIndex + ":\\ - file system " + format + "...";
             GUI.GUI.Wait();
             try
             {
                 fs.Disks[diskIndex].FormatPartition(diskIndex, format, quicky);
-                //Toast.msg = "Successfully formatted " + diskIndex + ":\\ - file system " + format + " - Restart PC to see changes";
+                Toast.msg = "Successfully formatted " + diskIndex + ":\\ - file system " + format + " - Restart PC to see changes";
                 Kernel.useDisks = false;
             }
             catch (Exception e)
             {
-                //Msg.Main("Error", "Failed formatting " + diskIndex + ":\\ - file system " + format + "; " + e, Resources.error);
+                Msg.Main("Error", "Failed formatting " + diskIndex + ":\\ - file system " + format + "; " + e, Icons.error);
             }
         }
         public static string NewFolder(string path, bool silent = false)
@@ -222,85 +191,52 @@ namespace NclearOS2
         }
         public static void Delete(string path, bool folder = false, bool silent = false)
         {
-            if (!silent) { GUI.GUI.Wait(); }
+            GUI.GUI.Loading = true;
+            GUI.GUI.Refresh();
             try
             {
                 if (folder) { Directory.Delete(path, true); }
-                else { System.IO.File.Delete(path); }
+                else { File.Delete(path); }
             }
             catch (Exception e)
-            { //Msg.Main("Error", "Failed deleting " + path + "; " + e, Resources.error);
+            {
+                Msg.Main("Error", "Failed deleting " + path + "; " + e, Icons.error);
             }
+            GUI.GUI.Loading = false;
         }
         public static void Rename(string path, string newName, bool silent = false)
         {
             //Toast.msg = "Not implemented yet";
         }
-
-        /*public static void Paste(string from, string fromName, string target)
+        public static void CopyFile(string from, string target = "")
         {
             GUI.GUI.Loading = true;
             GUI.GUI.Refresh();
-            if (string.IsNullOrWhiteSpace(target)){ target = from; }
-            string sourcePath = from + fromName;
-            string targetPath = target;
-            try
-            {
-                if (toDelete != null)
-                {
-                    Delete(toDelete);
-                }
-                tempPath = null;
-                tempName = null;
-                toDelete = null;
-                RefreshList(false);
-                Toast.msg = "Copied " + from + "\\" + fromName + " to " + target);
-            }
-            catch (Exception e) { Toast.msg = "Failed copying " + from + "\\" + fromName + " to " + target + "; " + e, true); }
-            RefreshList(true);
-            remove
-        }*/
-        //static public void Paste(string sourceFolder, string add, string destFolder)
-        //{
-        //    sourceFolder += add;
-        //    if (!Directory.Exists(destFolder))
-        //        Directory.CreateDirectory(destFolder);
-        //    string[] files = Directory.GetFiles(sourceFolder);
-        //    foreach (string file in files)
-        //    {
-        //        string name = Path.GetFileName(file);
-        //        string dest = Path.Combine(destFolder, name);
-        //        Save(NewFile(dest, ""), Open(file));
-        //    }
-        //    string[] folders = Directory.GetDirectories(sourceFolder);
-        //    foreach (string folder in folders)
-        //    {
-        //        string name = Path.GetFileName(folder);
-        //        string dest = Path.Combine(destFolder, name);
-        //        Paste(folder, "", dest);
-        //    }
-        //}
 
-        public static void Paste(string sourceDir, string destinationDir, string folderName, bool recursive)
+            if (string.IsNullOrWhiteSpace(target)){ target = NewFile(from, null); }
+            File.Copy(from, target, true);
+
+            GUI.GUI.Loading = false;
+        }
+        public static void CopyDirectory(string sourceDir, string destinationDir, bool recursive)
         {
             GUI.GUI.Loading = true;
             GUI.GUI.Refresh();
+
             var dir = new DirectoryInfo(sourceDir);
-            if (!dir.Exists)
-                throw new DirectoryNotFoundException($"Source directory not found: {dir.FullName}");
             DirectoryInfo[] dirs = dir.GetDirectories();
-            Directory.CreateDirectory(destinationDir + "\\" + folderName);
+            Directory.CreateDirectory(destinationDir);
             foreach (FileInfo file in dir.GetFiles())
             {
-                string targetFilePath = Path.Combine(destinationDir + "\\" + folderName, file.Name);
+                string targetFilePath = Path.Combine(destinationDir, file.Name);
                 file.CopyTo(targetFilePath);
             }
             if (recursive)
             {
                 foreach (DirectoryInfo subDir in dirs)
                 {
-                    string newDestinationDir = Path.Combine(destinationDir + "\\" + folderName, subDir.Name);
-                    Paste(subDir.FullName, newDestinationDir, folderName, true);
+                    string newDestinationDir = Path.Combine(destinationDir, subDir.Name);
+                    CopyDirectory(subDir.FullName, newDestinationDir, true);
                 }
             }
             GUI.GUI.Loading = false;
@@ -372,7 +308,7 @@ namespace NclearOS2.Commands
                     int dircount = 0;
                     int filecount = 0;
                     int filesize = 0;
-                    txt =  ("Directory of " + path + "\n");
+                    txt = ("Directory of " + path + "\n");
                     var directory_list = VFSManager.GetDirectoryListing(path);
                     foreach (var directoryEntry in directory_list)
                     {
@@ -396,7 +332,7 @@ namespace NclearOS2.Commands
                     shell.print = txt;
                     return 0;
                 case "cd":
-                    if(args.Length == 1)
+                    if (args.Length == 1)
                     {
                         shell.print = "CD: " + path;
                     }
@@ -436,7 +372,7 @@ namespace NclearOS2.Commands
                     return 0;
                 case "diskinfo":
                     int sel = seldisk;
-                    if(args.Length > 1)
+                    if (args.Length > 1)
                     {
                         sel = Convert.ToInt32(args[1]);
                     }

@@ -19,25 +19,25 @@ namespace NclearOS2
                 switch (RTC.DayOfTheWeek)
                 {
                     case 1:
-                        Weekday = "Monday";
+                        Weekday = "Monday, ";
                         break;
                     case 2:
-                        Weekday = "Tuesday";
+                        Weekday = "Tuesday, ";
                         break;
                     case 3:
-                        Weekday = "Wednesday";
+                        Weekday = "Wednesday, ";
                         break;
                     case 4:
-                        Weekday = "Thursday";
+                        Weekday = "Thursday, ";
                         break;
                     case 5:
-                        Weekday = "Friday";
+                        Weekday = "Friday, ";
                         break;
                     case 6:
-                        Weekday = "Saturday";
+                        Weekday = "Saturday, ";
                         break;
                     case 7:
-                        Weekday = "Sunday";
+                        Weekday = "Sunday, ";
                         break;
                 }
             }
@@ -85,7 +85,7 @@ namespace NclearOS2
             {
                 if (DisplayWeekday)
                 {
-                    return Weekday + ", " + RTC.DayOfTheMonth + "." + RTC.Month + ".20" + RTC.Year;
+                    return Weekday + RTC.DayOfTheMonth + "." + RTC.Month + ".20" + RTC.Year;
                 }
                 else
                 {
@@ -96,7 +96,7 @@ namespace NclearOS2
             {
                 if (DisplayWeekday)
                 {
-                    return Weekday + ", " + RTC.DayOfTheMonth + " " + Month;
+                    return Weekday + RTC.DayOfTheMonth + " " + Month;
                 }
                 else
                 {

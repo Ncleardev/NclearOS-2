@@ -8,7 +8,7 @@ namespace NclearOS2
 {
     public class Kernel : Sys.Kernel
     {
-        public static readonly string OSVERSION = "NclearOS 2 Version Alpha 0.4 Pre-release";
+        public static readonly string OSVERSION = "NclearOS 2 Version Alpha 0.5";
         public static readonly string OSNAME = "NclearOS 2";
         public static string PCNAME = "pc";
         public static readonly string MAINDISK = "0:\\";
@@ -28,8 +28,6 @@ namespace NclearOS2
         public static bool useDisks = true;
         public static bool useNetwork = false;
         public static bool safeMode = false;
-
-        public static int debg;
         protected override void BeforeRun()
         {
             try
@@ -59,7 +57,7 @@ namespace NclearOS2
                 try
                 {
                     Display.Refresh();
-                    if (Display.canvas != null) { Msg.Main("Error", "System " + e, GUI.Icons.error); } else { Console.WriteLine("System " + e, GUI.Icons.error); }
+                    if (Kernel.GUIenabled) { Msg.Main("Error", "System " + e, GUI.Icons.error); } else { Console.WriteLine("System " + e, GUI.Icons.error); }
                 }
                 catch (Exception ex)
                 {

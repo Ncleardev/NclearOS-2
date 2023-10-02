@@ -1,8 +1,6 @@
-using NclearOS2.GUI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace NclearOS2.Commands
 {
@@ -111,7 +109,7 @@ namespace NclearOS2.Commands
             string[] args = command.ToLower().Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
             CommandsTree tree = CommandManager.GetTree(args[0]);
             if (tree == null) { print = "Unknown command '" + args[0] + "', type help for list of commands."; return 1; }
-            
+
             try { return tree.Execute(args, this); }
             catch (Exception e)
             {
@@ -170,7 +168,8 @@ namespace NclearOS2.Commands
             new Command(new string[] { "echo"}, "Displays a message."),
             new Command(new string[] { "beep"}, "Plays the sound of a beep through the PC Speaker.", new string[] { "[frequency/duration(ms)] - play a custom beep"}),
             new Command(new string[] { "prompt"}, "Allows to change displayed command prompt.", new string[] { "[text] - specifies the text of the command prompt; if empty sets prompt back to system default"}),
-            new Command(new string[] { "setres"}, "Allows to change display resolution.", new string[] { "[resolution] - WIDTHxHEIGHT or WIDTHxHEIGHT@COLORDEPTH or leave empty to see the list of available resolutions"})
+            new Command(new string[] { "setres"}, "Allows to change display resolution.", new string[] { "[resolution] - WIDTHxHEIGHT or WIDTHxHEIGHT@COLORDEPTH or leave empty to see the list of available resolutions"}),
+            new Command(new string[] { "exit"}, "Switch beetween GUI and Text mode.")
             })
         {
         }
@@ -228,17 +227,17 @@ namespace NclearOS2.Commands
                     int allvariants = 0;
                     foreach (CommandsTree module in CommandManager.commandTrees)
                     {
-                        modules+= module.name + new string(' ', 19 - module.name.Length) + module.description + "\n";
+                        modules += module.name + new string(' ', 19 - module.name.Length) + module.description + "\n";
                         foreach (Command cmd2 in module.commands)
                         {
                             foreach (string cmdvariant in cmd2.commands)
                             {
-                                modules += cmdvariant + " ";
+                                modules += cmdvariant + " | ";
                                 allvariants++;
                             }
                             allcommands++;
                         }
-                        modules+= "\n\n---\n";
+                        modules += "\n\n";
                         allmodules++;
                     }
                     shell.print = modules + "Installed modules: " + allmodules + " Installed commands: " + allcommands + ", including all variants: " + allvariants;
@@ -287,8 +286,16 @@ namespace NclearOS2.Commands
                     }
                     else
                     {
-                        GUI.GUI.SetRes(GUI.GUI.ResParse(args[1]));
+                        shell.print = GUI.GUI.SetRes(GUI.GUI.ResParse(args[1]));
                     }
+                    return 0;
+                case "exit":
+                    if (Kernel.GUIenabled)
+                    {
+                        GUI.GUI.canvas.Disable();
+                        TextMode.ConsoleMode();
+                    }
+                    else { shell.print = GUI.GUI.SetRes(GUI.GUI.displayMode); }
                     return 0;
             }
             return 1;
@@ -366,7 +373,7 @@ namespace NclearOS2.Commands
             switch (args[0])
             {
                 case "debug":
-                    if(Kernel.GUIenabled)
+                    if (Kernel.GUIenabled)
                     {
                         GUI.GUI.debug = !GUI.GUI.debug;
                         shell.print = "Debug: " + GUI.GUI.debug;
@@ -438,7 +445,7 @@ namespace NclearOS2.Commands
                 shell.print = Kernel.OSVERSION;
                 return 0;
             }
-                return 1;
+            return 1;
         }
     }
 }

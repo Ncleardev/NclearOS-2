@@ -2,6 +2,7 @@
 using Cosmos.System;
 using Cosmos.System.Graphics;
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 
@@ -16,12 +17,8 @@ namespace NclearOS2.GUI
             this.y = y;
             this.icon = icon;
             this.StartX = this.StartY = this.StartXOld = this.StartYOld = ProcessManager.running.Count(p => p is Window) * 20 + 50;
-            appCanvas = new Bitmap((uint)x, (uint)y, ColorDepth.ColorDepth32);
-            borderCanvas = PostProcess.CropBitmap(Images.wallpaperBlur, StartX, StartY, x, 30);
-            Font.DrawString(name, Color.White.ToArgb(), 36, 10, borderCanvas.rawData, x);
-            Font.DrawImageAlpha(icon, 5, 3, borderCanvas.rawData, x);
-            Font.DrawImageAlpha(Icons.minimize, x - 50, 7, borderCanvas.rawData, x);
-            Font.DrawImageAlpha(Icons.close, x - 20, 7, borderCanvas.rawData, x);
+            appCanvas = new Bitmap((uint)x, (uint)y, GUI.displayMode.ColorDepth);
+            RefreshBorder();
         }
         internal int x;
         internal int y;
@@ -34,10 +31,12 @@ namespace NclearOS2.GUI
         internal bool minimized;
         internal Bitmap appCanvas;
         internal Bitmap borderCanvas;
-        //internal Action<int, int> OnClicked;
+        internal Action<int, int> OnClicked;
+        //internal Action<int, int> OnLongPressed;
         internal Action<KeyEvent> OnKeyPressed;
         internal Action OnStartMoving;
         internal Action OnMoved;
+        internal Action OnBackgroundChange;
 
         public void DrawChar(char c, int color, int bg, int[] canvas, int canvasWidth, int x2, int y2)
         {
@@ -90,6 +89,7 @@ namespace NclearOS2.GUI
             {
                 if (c == '\n') { y2 += 20; x2 = ogX; continue; }
                 DrawChar(c, color, bg, appCanvas.rawData, x, x2, y2);
+                if(x2+Font.fontX > x) { return; }
                 x2 += Font.fontX;
             }
         }
@@ -171,6 +171,15 @@ namespace NclearOS2.GUI
         internal void AlphaBackground()
         {
             appCanvas = PostProcess.CropBitmap(Images.wallpaperBlur, StartX, StartY + 30, x, y);
+        }
+        public void RefreshBorder()
+        {
+            this?.OnBackgroundChange?.Invoke();
+            borderCanvas = PostProcess.CropBitmap(Images.wallpaperBlur, StartX, StartY, x, 30);
+            Font.DrawString(name, Color.White.ToArgb(), 36, 10, borderCanvas.rawData, x);
+            Font.DrawImageAlpha(icon, 5, 3, borderCanvas.rawData, x);
+            Font.DrawImageAlpha(Icons.minimize, x - 50, 7, borderCanvas.rawData, x);
+            Font.DrawImageAlpha(Icons.close, x - 20, 7, borderCanvas.rawData, x);
         }
     }
 }

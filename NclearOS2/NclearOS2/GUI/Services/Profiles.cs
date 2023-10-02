@@ -71,7 +71,7 @@ namespace NclearOS2.GUI
             {
                 if (Kernel.useDisks && !Kernel.safeMode)
                 {
-                    F.Save(Kernel.SYSTEMCONFIG, "NclearOS 2 System Config\nScreenRes: " + GUI.displayMode.Columns + "x" + GUI.displayMode.Rows + "\n              ");
+                    F.Save(Kernel.SYSTEMCONFIG, "NclearOS 2 System Config\nScreenRes: " + GUI.screenX + "x" + GUI.screenY + "\n              ");
                     F.Save(Kernel.USERCONFIG, "NclearOS 2 User Config\nWallpaperNum: " + Convert.ToString(Settings.wallpapernum) + "\nCursorType: " + (Settings.cursorWhite ? 1 : 0) + "\nColorTheme: " + Convert.ToString(GUI.SystemPen) + "\n              ");
                 }
             }

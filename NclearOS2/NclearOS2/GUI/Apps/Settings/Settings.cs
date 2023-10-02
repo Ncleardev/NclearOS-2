@@ -17,7 +17,7 @@ namespace NclearOS2.GUI
         public static bool cursorWhite = false;
         public static int wallpaperheight = 0;
 
-        public Settings() : base("Settings", 300, 300, new Bitmap(Resources.Settings), Priority.Realtime) { OnMoved = Moved; OnStartMoving = StartMoving; }
+        public Settings() : base("Settings", 300, 300, new Bitmap(Resources.Settings), Priority.Realtime) { OnMoved = Moved; OnStartMoving = StartMoving; OnBackgroundChange = BgChange; }
         internal override void Update()
         {
             if (!minimized)
@@ -104,5 +104,6 @@ namespace NclearOS2.GUI
             DrawImageAlpha(cursor1, 15, 25);
             DrawImageAlpha(cursor2, 50, 25);
         }
+        private void BgChange() { Background(0); UI(); }
     }
 }

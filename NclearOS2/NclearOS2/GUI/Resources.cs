@@ -66,7 +66,7 @@ namespace NclearOS2.GUI
         [ManifestResourceStream(ResourceName = "NclearOS2.GUI.Apps.Console.console.bmp")]
         public static byte[] ConsoleIcon;
         [ManifestResourceStream(ResourceName = "NclearOS2.GUI.Apps.SysInfo.sysinfo.bmp")]
-        public static byte[] SysInfo;
+        public static byte[] InfoSystemIcon;
         [ManifestResourceStream(ResourceName = "NclearOS2.GUI.Apps.Settings.settings.bmp")]
         public static byte[] Settings;
         [ManifestResourceStream(ResourceName = "NclearOS2.GUI.Apps.Files.files.bmp")]

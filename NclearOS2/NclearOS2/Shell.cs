@@ -15,6 +15,8 @@ namespace NclearOS2
     public class TextMode
     {
         private static CommandShell shell;
+        private static int yPos;
+        private static bool exitToGUI;
         public static void BootMenu(string err = "ok")
         {
             Console.ResetColor();
@@ -28,7 +30,7 @@ namespace NclearOS2
                 Console.ResetColor();
                 if (err != "ok") { Console.WriteLine("Failed to initialize canvas\n" + err); }
 
-                Console.Write("\nESC - Shutdown System\n\nQ - Safe Mode\nA - Safe Mode with File System\nZ - Normal Mode without filesystem\nEnter - Start System Normally\nC - Console (Text) Mode\n\nSelect option: ");
+                Console.Write("\nESC - Shutdown System\n\nQ - Safe Mode\nEnter - Start System Normally\nC - Console (Text) Mode\n\nSelect option: ");
                 try
                 {
                     ConsoleKeyInfo cki = Console.ReadKey();
@@ -38,21 +40,14 @@ namespace NclearOS2
                             Kernel.Shutdown();
                             while (true);
                         case ConsoleKey.Q:
-                            Kernel.useDisks = false;
                             Kernel.safeMode = true;
-                            return;
-                        case ConsoleKey.A:
-                            Kernel.useDisks = true;
-                            Kernel.safeMode = true;
-                            return;
-                        case ConsoleKey.Z:
                             Kernel.useDisks = false;
                             return;
                         case ConsoleKey.Enter:
                             return;
                         case ConsoleKey.C:
                             ConsoleMode();
-                            break;
+                            return;
                     }
                 }
                 catch (Exception e)
@@ -72,9 +67,14 @@ namespace NclearOS2
             while (true)
             {
                 Console.Write("> ");
+                yPos = Console.CursorTop + 1;
                 shell.Execute(Console.ReadLine());
                 Heap.Collect();
+                if(exitToGUI) { goto Exit; }
             }
+        Exit:
+            exitToGUI = false;
+            return;
         }
         private static void ExecuteError()
         {
@@ -82,6 +82,8 @@ namespace NclearOS2
         }
         private static void Result()
         {
+            if(shell.print.Contains("Successfully changed resolution to ")) { exitToGUI = true; }
+            Console.CursorTop = yPos;
             Console.WriteLine(shell.print);
         }
     }

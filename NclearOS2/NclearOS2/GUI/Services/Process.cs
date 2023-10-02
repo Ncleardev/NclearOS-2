@@ -1,5 +1,7 @@
 ﻿using Cosmos.System;
 using System;
+using System.Drawing;
+using System.Xml.Linq;
 
 namespace NclearOS2.GUI
 {
@@ -13,6 +15,7 @@ namespace NclearOS2.GUI
         internal int id;
         internal uint usageRAM;
         internal string name;
+
         internal enum Priority //how often Update() method is called
         {
             None,

@@ -7,27 +7,41 @@ using System.Drawing;
 using System.Collections.Generic;
 using F = NclearOS2.FileManager;
 using Sys = Cosmos.System;
+using System.Linq;
+using Cosmos.System.FileSystem.VFS;
+using System.IO;
+using static System.Net.Mime.MediaTypeNames;
+using Cosmos.System.FileSystem;
+using System.ComponentModel.Design;
 
 namespace NclearOS2.GUI
 {
-    internal class FilesLegacy : Window
+    internal class Files : Window
     {
-        public FilesLegacy(int x, int y) : base("Files", x, y, new Bitmap(Resources.Files), Priority.Realtime) { OnKeyPressed = Key; }
+        public Files(int x, int y) : base("Files", x, y, new Bitmap(Resources.Files), Priority.None) { OnKeyPressed = Key; OnClicked = OnPressed; }
         public string cd = "Computer";
+        private int selY = -1;
         public string CD
         {   get { return cd; }
             set
             {
+                GUI.Loading = true;
                 cd = value;
-                if(value == "Computer")
+                selY = -1;
+                Background(GUI.DarkGrayPen.ValueARGB);
+                DrawString(CD, Color.White.ToArgb(), GUI.DarkGrayPen.ValueARGB, 5, 25);
+                DrawHorizontalLine(Color.White.ToArgb(), CD.Length * Font.fontX + 10, 32, x - 10);
+                if(CD != "Computer") { DrawString("<  ^  New File  New Folder", Color.White.ToArgb(), GUI.DarkGrayPen.ValueARGB, 10, 5); }
+                DrawString(RefreshList(), Color.White.ToArgb(), GUI.DarkGrayPen.ValueARGB, 10, this.y - 30);
+                int i = -1;
+                foreach (var el in listresult)
                 {
-                    DrawString(disks, Color.White.ToArgb(), GUI.DarkGrayPen.ValueARGB, StartX + 15, StartY + 15);
+                    Print(++i, GUI.DarkGrayPen.ValueARGB);
+                    GUI.Refresh();
                 }
-                else { DrawString(listresult, Color.White.ToArgb(), GUI.DarkGrayPen.ValueARGB, StartX + 15, StartY + 15); }
-                DrawString(cd, Color.White.ToArgb(), GUI.DarkGrayPen.ValueARGB, StartX + 5, StartY + 5);
+                GUI.Loading = false;
             }
         }
-        public static string disks = "";
         public static string undoDir = "Computer";
 
         private static Bitmap diskIcon = new Bitmap(Resources.DiskIcon);
@@ -37,322 +51,274 @@ namespace NclearOS2.GUI
         public static string tempName;
         public static string toDelete;
 
-        public static string SaveContent;
-
-        public static string listresult;
-        public static List<string> RAWlistresult = new();
-        public static List<string> Type = new();
-
-        public static string selectionType;
-        public static int selectionY = 0;
-        public static string selected;
-        public static int clickedOn;
-
-        private static int doubleClick = -1;
-        private static int currentDisk;
-
-        public static int disknumbermax = 0;
+        public static List<string[]> listresult = new();
         internal override int Start()
         {
             if (!Kernel.useDisks) { Msg.Main("Files", "File system not initialized; Type 'init' in Console to access files.", Icons.warn); return -1; }
-            if (F.diskList.Count == 0)
-            {
-                disks = F.ListDisks();
-                if (F.diskList.Count == 0) { Msg.Main("Files", "No FAT32 partitions found", Icons.warn); return -1; }
-            }
+            if (F.fs.GetDisks().Count == 0) { Msg.Main("Files", "No FAT32 partitions found", Icons.warn); return -1; }
             Background(GUI.DarkGrayPen.ValueARGB);
-            DrawFilledRectangle(GUI.SystemPen.ValueARGB, StartX, StartY, x, 10);
-            DrawString(CD, Color.White.ToArgb(), GUI.DarkGrayPen.ValueARGB, StartX + 5, StartY + 5);
-            DrawString(disks, Color.White.ToArgb(), GUI.DarkGrayPen.ValueARGB, StartX + 15, StartY + 15);
+            CD = "Computer";
             return 0;
         }
-        internal override void Update()
+        internal override void Update() { }
+        internal override int Stop() { return 0; }
+        private void Key(KeyEvent key)
         {
-            if (!minimized)
+            switch (key.Key)
             {
-                //DrawHorizontalLine(Color.White, StartX + CD.Length * 8 + 10, StartY + 31, StartX + x, StartY + 31);
-                if (selectionY != 0) { DrawImageAlpha(Icons.lockicon, 10, selectionY); }
-                if (MouseManager.Y > StartY + 45 && Sys.MouseManager.Y < StartY + y && Sys.MouseManager.X > StartX + 10 && Sys.MouseManager.X < StartX + x)
+                case ConsoleKeyEx.F5:
+                    CD = CD;
+                    break;
+            }
+            if (CD != "Computer")
+            {
+                if (selY != -1)
                 {
-                    clickedOn = ((int)Sys.MouseManager.Y - StartY + 55) / 16 - 5;
-                    GUI.canvas.DrawString("Position: " + clickedOn, GUI.font, GUI.WhitePen, StartX + x - 100, StartY + y - 10);
-                    if (GUI.Pressed)
+                    switch (key.Key)
                     {
-                        if (CD == "Computer")
-                        {
-                            if (clickedOn - 1 < disknumbermax)
+                        case ConsoleKeyEx.Delete:
+                            if (listresult[selY][0] == "DIR")
                             {
-                                if (doubleClick == clickedOn - 1)
-                                {
-                                    currentDisk = clickedOn - 1;
-                                    CD = currentDisk + ":\\";
-                                    doubleClick = -1;
-                                    RefreshList(true);
-                                }
-                                else
-                                {
-                                    selectionY = clickedOn * 16 + 28;
-                                    doubleClick = clickedOn - 1;
-                                }
-                            }
-                            else { selectionY = 0; doubleClick = -1; }
-                        }
-                        else
-                        {
-                            if (clickedOn <= RAWlistresult.Count)
-                            {
-                                if (selected == RAWlistresult[clickedOn - 1])
-                                {
-                                    selected = null;
-                                    selectionY = 0;
-                                    if (Type[clickedOn - 1].Equals("DIR"))
-                                    {
-                                        undoDir = CD;
-                                        if (CD.EndsWith('\\')) { CD += RAWlistresult[clickedOn - 1]; }
-                                        else { CD += '\\' + RAWlistresult[clickedOn - 1]; }
-                                        RefreshList(true);
-                                    }
-                                    else
-                                    {
-                                        GUI.Loading = true;
-                                        GUI.Refresh();
-                                        if (Type[clickedOn - 1].Equals("BMP"))
-                                        {
-                                            //GUI.WallpaperOn = true;
-                                            //Resources.wallpaper = new Bitmap(F.OpenInBytes(CD + "\\" + RAWlistresult[clickedOn - 1]));
-                                        }
-                                        else
-                                        {
-                                            //ProcessManager.Add(new Notepad((int)(GUI.screenX - 250), (int)(GUI.screenY - 170), CD + "\\" + RAWlistresult[clickedOn - 1]));
-                                        }
-                                    }
-                                    selectionType = null;
-                                }
-                                else
-                                {
-                                    selected = RAWlistresult[clickedOn - 1];
-                                    selectionY = clickedOn * 16 + 28;
-                                    if (Type[clickedOn - 1].Equals("DIR"))
-                                    {
-                                        selectionType = "DIR";
-                                    }
-                                    else
-                                    {
-                                        selectionType = Type[clickedOn - 1] + " File";
-                                    }
-                                }
+                                F.Delete(CD + "\\" + listresult[selY][1], true);
                             }
                             else
                             {
-                                selectionY = 0; selectionType = null; selected = null;
+                                F.Delete(CD + "\\" + listresult[selY][1], false);
                             }
+                            CD = CD;
+                            break;
+                    }
+                    if (KeyboardManager.ControlPressed)
+                    {
+                        switch (key.Key)
+                        {
+                            case ConsoleKeyEx.N:
+                                if (KeyboardManager.ShiftPressed) { F.NewFolder(CD); }
+                                break;
                         }
                     }
                 }
-                if (CD == "Computer")
+                if (KeyboardManager.AltPressed)
                 {
-                    GUI.canvas.DrawImageAlpha(diskIcon, StartX + 10, StartY + y - 10);
-                    if (selectionY != 0)
+                    switch (key.Key)
                     {
-                        GUI.canvas.DrawString("Format", GUI.font, GUI.WhitePen, StartX + 10, StartY + 1);
-                        if (MouseManager.Y < StartY + 20 && MouseManager.Y > StartY && MouseManager.X > StartX + 5 && MouseManager.X < StartX + 50)
-                        {
-                            GUI.canvas.DrawString("Format", GUI.font, GUI.GrayPen, StartX + 10, StartY + 1);
-                            if (GUI.Pressed)
-                            {
-                                F.Format(clickedOn - 1);
-                            }
-                        }
+                        case ConsoleKeyEx.LeftArrow:
+                            GoBack();
+                            break;
+                        case ConsoleKeyEx.UpArrow:
+                            GoUp();
+                            break;
                     }
-                }
-                else
-                {
-                    GUI.canvas.DrawString("<  ^  New File  New Folder", GUI.font, GUI.WhitePen, StartX + 10, StartY + 1);
-                    if (selectionType == "DIR" || selectionType.Contains("File"))
-                    {
-                        GUI.canvas.DrawString("Rename  Delete  Cut  Copy", GUI.font, GUI.WhitePen, StartX + 230, StartY + 1);
-
-                    }
-                    if (!string.IsNullOrWhiteSpace(tempPath))
-                    {
-                        GUI.canvas.DrawString("Paste", GUI.font, GUI.WhitePen, StartX + 445, StartY + 1);
-                    }
-                    if (MouseManager.Y < StartY + 20 && MouseManager.Y > StartY && MouseManager.X > StartX + 5 && MouseManager.X < StartX + x)
-                    {
-                        if (MouseManager.X < StartX + 25)
-                        {
-                            GUI.canvas.DrawString("<", GUI.font, GUI.GrayPen, StartX + 10, StartY + 1);
-                            if (GUI.Pressed)
-                            {
-                                if (undoDir == CD)
-                                {
-                                    CD = "Computer";
-                                }
-                                else
-                                {
-                                    CD = undoDir;
-                                    if (CD != "Computer") { RefreshList(true); }
-                                }
-                            }
-                        }
-                        else if (MouseManager.X < StartX + 55)
-                        {
-                            GUI.canvas.DrawString("   ^", GUI.font, GUI.GrayPen, StartX + 10, StartY + 1);
-                            if (GUI.Pressed)
-                            {
-                                if (CD.Replace("\\", "") == currentDisk + ":")
-                                {
-                                    CD = "Computer";
-                                }
-                                else
-                                {
-                                    CD = Convert.ToString(System.IO.Directory.GetParent(CD));
-                                    RefreshList(true);
-                                }
-                            }
-                        }
-                        else if (MouseManager.X < StartX + 130)
-                        {
-                            GUI.canvas.DrawString("      New File", GUI.font, GUI.GrayPen, StartX + 10, StartY + 1);
-                            if (GUI.Pressed) { F.NewFile(CD + "\\New file"); RefreshList(false); }
-                        }
-                        else if (MouseManager.X < StartX + 220)
-                        {
-                            GUI.canvas.DrawString("                New Folder", GUI.font, GUI.GrayPen, StartX + 10, StartY + 1);
-                            if (GUI.Pressed) { F.NewFolder(CD + "\\New folder"); RefreshList(false); }
-                        }
-                        else if (MouseManager.X < StartX + 490 && MouseManager.X > StartX + 440 && !string.IsNullOrWhiteSpace(tempPath))
-                        {
-                            GUI.canvas.DrawString("Paste", GUI.font, GUI.GrayPen, StartX + 445, StartY + 1);
-                            if (GUI.Pressed)
-                            {
-                                F.Paste(tempPath + "\\" + tempName, CD, tempName, true);
-                            }
-                        }
-
-                        if (selectionType == "DIR" || selectionType.Contains("File") && MouseManager.X > StartX + 225)
-                        {
-                            if (MouseManager.X < StartX + 290)
-                            {
-                                GUI.canvas.DrawString("Rename", GUI.font, GUI.GrayPen, StartX + 230, StartY + 1);
-                                if (GUI.Pressed)
-                                {
-                                    F.Rename(CD + "\\" + selected, "Renamed");
-                                }
-                            }
-                            else if (MouseManager.X < StartX + 350)
-                            {
-                                GUI.canvas.DrawString("        Delete", GUI.font, GUI.GrayPen, StartX + 230, StartY + 1);
-                                if (GUI.Pressed)
-                                {
-                                    if (selectionType == "DIR") { F.Delete(CD + "\\" + selected, true); }
-                                    else { F.Delete(CD + "\\" + selected); }
-                                }
-                            }
-                            else if (MouseManager.X < StartX + 390)
-                            {
-                                GUI.canvas.DrawString("                Cut", GUI.font, GUI.GrayPen, StartX + 230, StartY + 1);
-                                if (GUI.Pressed)
-                                {
-                                    Cut(CD, selected);
-                                }
-                            }
-                            else if (MouseManager.X < StartX + 435)
-                            {
-                                GUI.canvas.DrawString("                     Copy", GUI.font, GUI.GrayPen, StartX + 230, StartY + 1);
-                                if (GUI.Pressed)
-                                {
-                                    Copy(CD, selected);
-                                }
-                            }
-                        }
-
-
-                    }
-                    if (selectionType == null || selectionType == "DIR") { GUI.canvas.DrawImageAlpha(icon, StartX + 10, StartY + y - 10); }
-                    else { GUI.canvas.DrawImageAlpha(icon, StartX + 10, StartY + y - 10); GUI.canvas.DrawString(selectionType, GUI.font, GUI.WhitePen, StartX + 40, StartY + y - 7); }
                 }
             }
-
-
-            /*if (SaveContent != null)
-            {
-                GUI.canvas.DrawFilledRectangle(GUI.SystemPen, StartX, StartY + y + 20, x, 20);
-                Window.name = "Files - Save file";
-                Graphic.TextView("File name: " + Input.input, StartX + 10, StartY + y + 22, Color.White, true);
-                if (Input.Listener())
-                {
-                    GUI.Refresh();
-                    Save(CD + Input.input, SaveContent);
-                    SaveContent = null;
-                    return;
-                }
-            }*/
         }
-        internal override int Stop() { return 0; }
-        public void RefreshList(bool ClearSelection)
+        private void Print(int index, int bgcolor)
         {
-            GUI.Loading = true;
-            GUI.Refresh();
-            try
+            if(index + 6 > this.y / 20) { DrawString("...", Color.White.ToArgb(), bgcolor, 15, this.y - 60); return; }
+            if (listresult[index][1].Length > 48) { DrawString(listresult[index][1] + " " + listresult[index][0], Color.White.ToArgb(), bgcolor, 15, index * 20 + 50); }
+            else
             {
-                if (ClearSelection) { selectionY = 0; selectionType = null; selected = null; }
-                listresult = "";
-                RAWlistresult.Clear();
-                Type.Clear();
-                int dircount = 0;
-                int filecount = 0;
-                int filesize = 0;
-                var directory_list = F.fs.GetDirectoryListing(CD);
-                foreach (var directoryEntry in directory_list)
+                switch (listresult[index].Length)
                 {
-                    try
-                    {
-                        if (directoryEntry.mEntryType == Sys.FileSystem.Listing.DirectoryEntryTypeEnum.File)
+                    case 5:
+                        if(listresult[index][1] == listresult[index][2])
                         {
-                            Type.Add(directoryEntry.mName.Substring(directoryEntry.mName.IndexOf('.') + 1).ToUpper());
-                            if (directoryEntry.mName.Length < 48) { listresult += directoryEntry.mName + new string(' ', 48 - directoryEntry.mName.Length) + Type[Type.Count - 1] + " File | " + directoryEntry.mSize + " bytes\n"; }
-                            else { listresult += directoryEntry.mName + "\n"; }
-                            filecount++;
-                            filesize += Convert.ToInt32(directoryEntry.mSize);
-                        }
-                        else if (directoryEntry.mEntryType == Sys.FileSystem.Listing.DirectoryEntryTypeEnum.Directory)
-                        {
-                            if (directoryEntry.mName.Length < 48) { listresult += directoryEntry.mName + new string(' ', 48 - directoryEntry.mName.Length) + "Folder\n"; }
-                            else { listresult += directoryEntry.mName + "\n"; }
-                            Type.Add("DIR");
-                            dircount++;
+                            DrawString(listresult[index][1] + new string(' ', 40 - listresult[index][1].Length) + listresult[index][0] + " | " + listresult[index][3] + " MB / " + listresult[index][4] + " MB", Color.White.ToArgb(), bgcolor, 15, index * 20 + 50);
                         }
                         else
                         {
-                            if (directoryEntry.mName.Length < 48) { listresult += directoryEntry.mName + new string(' ', 48 - directoryEntry.mName.Length) + "UNKNOWN\n"; }
-                            else { listresult += directoryEntry.mName + "\n"; }
-                            Type.Add("UNKNOWN");
+                            DrawString(listresult[index][1] + " - " + listresult[index][2] + new string(' ', 40 - listresult[index][2].Length + listresult[index][1].Length + 3) + listresult[index][0] + " | " + listresult[index][3] + " MB / " + listresult[index][4] + " MB", Color.White.ToArgb(), bgcolor, 15, index * 20 + 50);
                         }
-                        RAWlistresult.Add(directoryEntry.mName);
-                    }
-                    catch
-                    {
-                        listresult += "UNKNOWN";
-                        Type.Add("UNKNOWN");
-                        RAWlistresult.Add("UNKNOWN");
-                    }
-                    if (ClearSelection) { GUI.Refresh(); }
+                        break;
+                    case 3:
+                        DrawString(listresult[index][1] + new string(' ', 50 - listresult[index][1].Length) + listresult[index][0] + " File | " + listresult[index][2] + " bytes\n", Color.White.ToArgb(), bgcolor, 15, index * 20 + 50);
+                        break;
+                    default:
+                        DrawString(listresult[index][1] + new string(' ', 50 - listresult[index][1].Length) + "Folder", Color.White.ToArgb(), bgcolor, 15, index * 20 + 50);
+                        break;
                 }
-                if (dircount == 1) { listresult += ("\nTotal: " + dircount + " Dir | "); }
-                else { listresult += ("\nTotal: " + dircount + " Dirs | "); }
-                if (filecount == 1) { listresult += (filecount + " File - "); }
-                else { listresult += (filecount + " Files - "); }
-                listresult += (Convert.ToInt32(filesize / 1024f / 1024f) + " MB - " + filesize + " B\n");
             }
-            catch
+        }
+        private void OnPressed(int x, int y)
+        {
+            if(y > 50 && y < listresult.Count * 20 + 50 && y < this.y - 60)
             {
-                Msg.Main("Error", CD + "' is not available.", Icons.error);
-                GUI.Refresh();
-                CD = undoDir;
-                if (CD != "Computer") { RefreshList(true); }
+                if(selY == (y - 50) / 20)
+                {
+                    if (listresult[selY][0] == "DIR")
+                    {
+                        undoDir = CD;
+                        if (CD.EndsWith('\\')) { CD += listresult[selY][1]; }
+                        else { CD += '\\' + listresult[selY][1]; }
+                        return;
+                    }
+                    else
+                    {
+                        if (CD == "Computer")
+                        {
+                            CD = listresult[selY][1]; return;
+                        }
+                        else
+                        {
+                            if (CD.EndsWith('\\')) { ProcessManager.Run(new Notepad((int)(GUI.screenX - 250), (int)(GUI.screenY - 170), CD + listresult[selY][1])); }
+                            else { ProcessManager.Run(new Notepad((int)(GUI.screenX - 250), (int)(GUI.screenY - 170), CD + "\\" + listresult[selY][1])); }
+                            
+                            DrawFilledRectangle(GUI.DarkGrayPen.ValueARGB, 10, selY * 20 + 49, this.x - 20, Font.fontY + 2);
+                            Print(selY, GUI.DarkGrayPen.ValueARGB);
+                            selY = -1;
+                            return;
+                        }
+                    }
+                }
+                else if(selY != -1)
+                {
+                    DrawFilledRectangle(GUI.DarkGrayPen.ValueARGB, 10, selY * 20 + 49, this.x - 20, Font.fontY + 2);
+                    Print(selY, GUI.DarkGrayPen.ValueARGB);
+                }
+                selY = (y - 50) / 20;
+                DrawFilledRectangle(Color.Gray.ToArgb(), 10, selY * 20 + 49, this.x - 20, Font.fontY + 2);
+                Print(selY, Color.Gray.ToArgb());
+                if(CD == "Computer")
+                {
+                    DrawString("Format", Color.White.ToArgb(), GUI.DarkGrayPen.ValueARGB, 10, 5);
+                }
+                else
+                {
+                    DrawString("Delete  Copy", Color.White.ToArgb(), GUI.DarkGrayPen.ValueARGB, 230, 5);
+                }
             }
-            GUI.Loading = false;
+            else if(y < 20)
+            {
+                GUI.Loading = true;
+                GUI.Refresh();
+                if(CD == "Computer" && selY != -1 && x < 70)
+                {
+                    F.Format(Convert.ToInt32(listresult[selY][1].Split(':')[0]));
+                }
+                else if(x < 25)
+                {
+                    GoBack();
+                    return;
+                }
+                else if(x < 55)
+                {
+                    GoUp();
+                    return;
+                }
+                else if (x < 130)
+                {
+                    F.NewFile(CD + "\\New file");
+                }
+                else if (x < 220)
+                {
+                    F.NewFolder(CD + "\\New folder");
+                }
+                else if (x < 290 && selY != -1)
+                {
+                    if(listresult[selY][0] == "DIR")
+                    {
+                        F.Delete(CD + "\\" + listresult[selY][1], true);
+                    }
+                    else
+                    {
+                        F.Delete(CD + "\\" + listresult[selY][1], false);
+                    }
+                }
+                else if (x < 350 && selY != -1)
+                {
+                    if (listresult[selY][0] == "DIR")
+                    {
+                        F.CopyDirectory(CD + "\\" + listresult[selY][1], F.NewFolder(CD + "\\" + listresult[selY][1]), false);
+                    }
+                    else
+                    {
+                        F.CopyFile(CD + "\\" + listresult[selY][1]);
+                    }
+                }
+                else { GUI.Loading = false; return; }
+                CD = CD;
+            }
+            else if (selY != -1)
+            {
+                DrawFilledRectangle(GUI.DarkGrayPen.ValueARGB, 10, selY * 20 + 49, this.x - 20, Font.fontY + 2);
+                Print(selY, GUI.DarkGrayPen.ValueARGB);
+            }
+        }
+        private string RefreshList()
+        {
+            listresult.Clear();
+            string status = "";
+            if (cd == "Computer")
+            {
+                //int diskcount = 0;
+                int partcount = 0;
+                foreach (Disk disk in F.fs.GetDisks())
+                {
+                    foreach (ManagedPartition partition in disk.Partitions)
+                    {
+                        long used_space = partition.MountedFS.Size - partition.MountedFS.TotalFreeSpace / 1024 / 1024;
+                        listresult.Add(new string[] { partition.MountedFS.Type, partition.RootPath, partition.MountedFS.Label, used_space.ToString(), partition.MountedFS.Size.ToString() });
+                        partcount++;
+                    }
+                    //diskcount++;
+                }
+                //if (diskcount == 1) { status += ("Total: " + diskcount + " Disk | "); }
+                //else { status += ("Total: " + diskcount + " Disks | "); }
+                if (partcount == 1) { status += (partcount + " Partition"); }
+                else { status += (partcount + " Partitions"); }
+                return status;
+            }
+            int dircount = 0;
+            int filecount = 0;
+            int filesize = 0;
+            var directory_list = VFSManager.GetDirectoryListing(cd);
+            foreach (var directoryEntry in directory_list)
+            {
+                try
+                {
+                    if (directoryEntry.mEntryType == Sys.FileSystem.Listing.DirectoryEntryTypeEnum.File)
+                    {
+                        listresult.Add(new string[] { directoryEntry.mName.Substring(directoryEntry.mName.IndexOf('.') + 1).ToUpper(), directoryEntry.mName, directoryEntry.mSize.ToString() });
+                        filecount++;
+                        filesize += Convert.ToInt32(directoryEntry.mSize);
+                    }
+                    else if (directoryEntry.mEntryType == Sys.FileSystem.Listing.DirectoryEntryTypeEnum.Directory)
+                    {
+                        listresult.Add(new string[] { "DIR", directoryEntry.mName });
+                        dircount++;
+                    }
+                    else
+                    {
+                        listresult.Add(new string[] { "UNKNOWN", directoryEntry.mName });
+                    }
+                }
+                catch (Exception e)
+                {
+                    listresult.Add(new string[] { "UNKNOWN", e.ToString() });
+                }
+            }
+            if (dircount == 1) { status += ("Total: " + dircount + " Folder | "); }
+            else { status += ("Total: " + dircount + " Folders | "); }
+            if (filecount == 1) { status += (filecount + " File - "); }
+            else { status += (filecount + " Files - "); }
+            status += (Convert.ToInt32(filesize / 1024f / 1024f) + " MB - " + filesize + " B");
+            return status;
+        }
+        private void GoBack()
+        {
+            if (undoDir == CD)
+            {
+                CD = "Computer";
+            }
+            else
+            {
+                CD = undoDir;
+            }
+        }
+        private void GoUp()
+        {
+            string path = Convert.ToString(Directory.GetParent(CD));
+            CD = (path == "") ? "Computer" : path;
         }
         public void Cut(string path, string name)
         {
@@ -365,77 +331,6 @@ namespace NclearOS2.GUI
             tempPath = path;
             tempName = name;
             toDelete = null;
-        }
-        private void Key(KeyEvent key)
-        {
-            if (CD != "Computer")
-            {
-                switch (key.Key)
-                {
-                    case ConsoleKeyEx.F5:
-                        RefreshList(true);
-                        break;
-                }
-                if (selectionType == "DIR" || selectionType.Contains("File"))
-                {
-                    switch (key.Key)
-                    {
-                        case ConsoleKeyEx.Delete:
-                            if (selectionType == "DIR") { F.Delete(CD + "\\" + selected, true); }
-                            else { F.Delete(CD + "\\" + selected); }
-                            break;
-                        case ConsoleKeyEx.F2:
-                            F.Rename(CD + "\\" + selected, "Renamed");
-                            break;
-                    }
-                    if (KeyboardManager.ControlPressed)
-                    {
-                        switch (key.Key)
-                        {
-                            case ConsoleKeyEx.C:
-                                Copy(CD, selected);
-                                break;
-                            case ConsoleKeyEx.V:
-                                F.Paste(tempPath + "\\" + tempName, CD, tempName, true);
-                                break;
-                            case ConsoleKeyEx.X:
-                                Cut(CD, selected);
-                                break;
-                            case ConsoleKeyEx.N:
-                                if (KeyboardManager.ShiftPressed) { F.NewFolder(CD); }
-                                break;
-                        }
-                    }
-                }
-            }
-            if (KeyboardManager.AltPressed)
-            {
-                switch (key.Key)
-                {
-                    case ConsoleKeyEx.LeftArrow:
-                        if (undoDir == CD)
-                        {
-                            CD = "Computer";
-                        }
-                        else
-                        {
-                            CD = undoDir;
-                            if (CD != "Computer") { RefreshList(true); }
-                        }
-                        break;
-                    case ConsoleKeyEx.UpArrow:
-                        if (CD.Replace("\\", "") == currentDisk + ":")
-                        {
-                            CD = "Computer";
-                        }
-                        else
-                        {
-                            CD = Convert.ToString(System.IO.Directory.GetParent(CD));
-                            RefreshList(true);
-                        }
-                        break;
-                }
-            }
         }
     }
 }

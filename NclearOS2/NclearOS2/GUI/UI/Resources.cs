@@ -33,7 +33,6 @@ namespace NclearOS2.GUI
     {
         //wallpapers
         public static Bitmap wallpaper;
-        public static Bitmap wallpaperLock;
         public static Bitmap wallpaperBlur;
     }
 }

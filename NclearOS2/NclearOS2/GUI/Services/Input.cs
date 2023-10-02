@@ -11,8 +11,7 @@ namespace NclearOS2.GUI
         {
             if (KeyboardManager.TryReadKey(out keyEvent))
             {
-                GUI.userInactivity = false;
-                GUI.userInactivityTime = -1;
+                GUI.wasClicked = true;
                 switch (keyEvent.Key)
                 {
                     case ConsoleKeyEx.LWin:
@@ -23,7 +22,7 @@ namespace NclearOS2.GUI
                         ProcessManager.Run(new TaskManager());
                         return;
                     case ConsoleKeyEx.F11:
-                        ProcessManager.Run(new ConsoleApp((int)(GUI.displayMode.Columns - 250), (int)(GUI.displayMode.Rows - 100)));
+                        ProcessManager.Run(new ConsoleApp((int)(GUI.screenX - 250), (int)(GUI.screenY - 100)));
                         return;
                     case ConsoleKeyEx.F4:
                         if (KeyboardManager.AltPressed)

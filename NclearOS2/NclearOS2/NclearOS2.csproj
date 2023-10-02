@@ -20,6 +20,7 @@
         <RemoveBootDebugOutput>True</RemoveBootDebugOutput>
         <DebugEnabled>False</DebugEnabled>
         <VMWareEdition>Player</VMWareEdition>
+        <CompressionType>Gzip</CompressionType>
     </PropertyGroup>
 
     <ItemGroup>

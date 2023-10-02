@@ -1,11 +1,11 @@
-﻿using Cosmos.Core.Memory;
+﻿using Cosmos.Core;
+using Cosmos.Core.Memory;
 using Cosmos.HAL;
 using Cosmos.System;
 using Cosmos.System.Graphics;
 using Cosmos.System.Graphics.Fonts;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Drawing;
 using System.Threading;
 
@@ -13,16 +13,15 @@ namespace NclearOS2.GUI
 {
     public class GUI
     {
-        public static Mode displayMode = new(1280, 720, ColorDepth.ColorDepth32);
+        public static Mode displayMode { get; private set; } = new(1280, 720, ColorDepth.ColorDepth32);
+        public static int screenX { get { return displayMode.Columns; } }
+        public static int screenY { get { return displayMode.Rows; } }
 
         public static int fps;
         private static int fps2;
         private static int frames;
 
-        private static uint oldXMouse;
-        private static uint oldYMouse;
-        public static bool userInactivity;
-        public static int userInactivityTime = -1;
+        public static bool wasClicked;
 
         public static bool Lock = true;
         public static bool screenSaver;
@@ -37,18 +36,18 @@ namespace NclearOS2.GUI
         public static bool Loading;
         public static bool HideCursor;
 
-        public static Canvas canvas;
+        public static VBECanvas canvas;
 
-        public static Pen WhitePen = new(Color.White);
-        public static Pen GrayPen = new(Color.Gray);
-        public static Pen DarkPen = new(Color.Black);
-        public static Pen DarkGrayPen = new(Color.FromArgb(40, 40, 40));
-        public static Pen RedPen = new(Color.DarkRed);
-        public static Pen Red2Pen = new(Color.Red);
-        public static Pen GreenPen = new(Color.Green);
-        public static Pen YellowPen = new(Color.Goldenrod);
-        public static Pen BluePen = new(Color.SteelBlue);
-        public static Pen DarkBluePen = new(Color.MidnightBlue);
+        public static readonly Pen WhitePen = new(Color.White);
+        public static readonly Pen GrayPen = new(Color.Gray);
+        public static readonly Pen DarkPen = new(Color.Black);
+        public static readonly Pen DarkGrayPen = new(Color.FromArgb(40, 40, 40));
+        public static readonly Pen RedPen = new(Color.DarkRed);
+        public static readonly Pen Red2Pen = new(Color.Red);
+        public static readonly Pen GreenPen = new(Color.Green);
+        public static readonly Pen YellowPen = new(Color.Goldenrod);
+        public static readonly Pen BluePen = new(Color.SteelBlue);
+        public static readonly Pen DarkBluePen = new(Color.MidnightBlue);
         public static Pen SystemPen = BluePen;
 
         public static PCScreenFont font;
@@ -58,16 +57,18 @@ namespace NclearOS2.GUI
 
         public static void Init()
         {
+            NclearOS2.Sysinfo.CPUname = "Unknown";
             if (!Kernel.GUIenabled)
             {
                 if (Kernel.safeMode) { displayMode = new(800, 600, ColorDepth.ColorDepth32); }
                 //else if (Kernel.useDisks) { displayMode = Profiles.LoadSystem(); }
+                else { NclearOS2.Sysinfo.CPUname = CPU.GetCPUBrandString(); }
                 try { SetRes(displayMode, true); }
                 catch (Exception e) { TextMode.BootMenu(e.Message); }
             }
             font = PCScreenFont.Default;
-            if (!Kernel.safeMode) { canvas.DrawImage(new Bitmap(Resources.WallpaperLock), 0, 0); canvas.DrawFilledRectangle(DarkPen, ((int)(displayMode.Columns - "Starting NclearOS".Length * 8) / 2) - 10, (int)(displayMode.Rows - 12) / 2, "Starting NclearOS".Length * 8 + 20, 24); }
-            canvas.DrawString("Starting NclearOS", font, GUI.WhitePen, (int)(displayMode.Columns - "Starting NclearOS".Length * 8) / 2, (int)(displayMode.Rows - 1) / 2);
+            //if (!Kernel.safeMode) { canvas.DrawImage(new Bitmap(Resources.Wallpaper), 0, 0); canvas.DrawFilledRectangle(DarkPen, ((int)(GUI.screenX - "Starting NclearOS".Length * 8) / 2) - 10, (int)(GUI.screenY - 12) / 2, "Starting NclearOS".Length * 8 + 20, 24); }
+            canvas.DrawString("Starting NclearOS", font, GUI.WhitePen, (int)(GUI.screenX - "Starting NclearOS".Length * 8) / 2, (int)(GUI.screenY - 1) / 2);
             canvas.Display();
 
             Resources.InitResources();
@@ -96,37 +97,51 @@ namespace NclearOS2.GUI
                             ApplyRes(new Bitmap(Resources.Wallpaper)); break;
                     }
                 }
-                else {
+                else
+                {
                     //Msg.Main("Information", "No valid FAT32 partitions found; File system is now disabled.", Icons.info);
                     ApplyRes(new Bitmap(Resources.Wallpaper));
                 }
+                ProcessManager.Run(new ScreenSaverService());
+                ProcessManager.Run(new Net());
             }
-            else { menu = new(); }
+            else
+            {
+                Images.wallpaper = new Bitmap(800, 600, ColorDepth.ColorDepth32);
+                Images.wallpaperBlur = new Bitmap(800, 600, ColorDepth.ColorDepth32);
+                menu = new();
+            }
             ProcessManager.Run(new GlobalInput());
-            ProcessManager.Run(new Net());
             ProcessManager.Run(new PerformanceWatchdog());
+            MouseManager.X = (uint)GUI.screenX;
+            MouseManager.Y = (uint)GUI.screenY;
         }
         public static void Refresh()
         {
+            if (fps2 != RTC.Second)
+            {
+                fps = frames;
+                frames = 0;
+                fps2 = RTC.Second;
+            }
+            frames++;
+
             switch (MouseManager.MouseState)
             {
                 case MouseState.Left or MouseState.Right:
-                    if (StartOneClick) { StartClick = false; }
-                    else { StartOneClick = true; StartClick = true; }
+                    StartClick = false;
+                    if (!StartOneClick) { StartOneClick = true; StartClick = true; }
                     OneClick = true;
                     LongPress = true;
-                    userInactivity = false;
-                    userInactivityTime = -1;
+                    wasClicked = true;
                     break;
                 case MouseState.None:
+                    Pressed = false;
                     if (OneClick)
                     {
                         Pressed = true;
                         OneClick = false;
-                    }
-                    else
-                    {
-                        Pressed = false;
+                        if(!screenSaver && !Lock) { ProcessManager.Click((int)MouseManager.X, (int)MouseManager.Y); }
                     }
                     StartOneClick = false;
                     StartClick = false;
@@ -137,15 +152,6 @@ namespace NclearOS2.GUI
             if (screenSaver) { ScreenSaver.Update(); }
             else
             {
-                if (MouseManager.X == oldXMouse || MouseManager.Y == oldYMouse)
-                { userInactivity = true; }
-                else
-                {
-                    oldXMouse = MouseManager.X;
-                    oldYMouse = MouseManager.Y;
-                    userInactivity = false;
-                    userInactivityTime = -1;
-                }
                 if (Lock) { LockScreen.Update(); }
                 else
                 {
@@ -153,48 +159,20 @@ namespace NclearOS2.GUI
                     ProcessManager.Refresh();
                     menu.Update();
                 }
-                if (userInactivity)
-                {
-                    if (userInactivityTime == -1)
-                    {
-                        if (RTC.Second < 30)
-                        {
-                            userInactivityTime = 59;
-                        }
-                        else
-                        {
-                            userInactivityTime = 29;
-                        }
-                    }
-                    else
-                    {
-                        if (RTC.Second == userInactivityTime)
-                        {
-                            canvas.Clear();
-                            screenSaver = true;
-                            Lock = true;
-                            HideCursor = true;
-                            return;
-                        }
-                    }
-                }
             }
             if (debug)
             {
-                if (fps2 != RTC.Second)
-                {
-                    fps = frames;
-                    frames = 0;
-                    fps2 = RTC.Second;
-                }
-                frames++;
                 if (ExecuteError == 1) { ExecuteError = 0; throw new Exception("Manual crash"); }
                 else if (ExecuteError == 2) { throw new Exception("Manual crash"); }
                 canvas.DrawString(NclearOS2.Sysinfo.Ram(), font, WhitePen, 10, 0);
-                canvas.DrawString(Convert.ToString(fps), font, WhitePen, (int)displayMode.Columns - 30, 0);
             }
+            
             Toast.Update();
             if (!HideCursor) { if (Loading) { canvas.DrawImageAlpha(Icons.cursorload, (int)MouseManager.X, (int)MouseManager.Y); } else { canvas.DrawImageAlpha(Icons.cursor, (int)MouseManager.X, (int)MouseManager.Y); } }
+            
+            GUI.canvas.DrawFilledRectangle(DarkPen, (int)GUI.screenX - 14, 0, 14, 7);
+            Font.DrawNumbers(Convert.ToString(fps), Color.Yellow, (int)GUI.screenX - 13, 1);
+            
             Heap.Collect();
             canvas.Display();
         }
@@ -213,7 +191,7 @@ namespace NclearOS2.GUI
                 Toast.Force(str);
                 Thread.Sleep(1000);
             }
-            canvas.DrawImage(Images.wallpaperLock, 0, 0);
+            canvas.DrawImage(Images.wallpaperBlur, 0, 0);
             //if (Kernel.useDisks && !Kernel.safeMode)
             //{
             //    Toast.Display("Saving user settings...");
@@ -231,7 +209,7 @@ namespace NclearOS2.GUI
         {
             try
             {
-                canvas = FullScreenCanvas.GetFullScreenCanvas(mode);
+                canvas = (VBECanvas)FullScreenCanvas.GetFullScreenCanvas(mode);
                 displayMode = mode;
                 MouseManager.ScreenWidth = (uint)mode.Columns - 1;
                 MouseManager.ScreenHeight = (uint)mode.Rows;
@@ -249,10 +227,14 @@ namespace NclearOS2.GUI
         }
         public static void ApplyRes(Bitmap wallpaper)
         {
-            Images.wallpaper = PostProcess.ResizeBitmap(wallpaper, (uint)displayMode.Columns, (uint)displayMode.Rows);
-            Images.wallpaperLock = PostProcess.ResizeBitmap(new Bitmap(Resources.WallpaperLock), (uint)displayMode.Columns, (uint)displayMode.Rows);
-            Images.wallpaperBlur = PostProcess.ResizeBitmap(PostProcess.DarkenBitmap(PostProcess.ApplyBlur(PostProcess.ResizeBitmap(wallpaper, 640, 360), 20), 0.5f), (uint)displayMode.Columns, (uint)displayMode.Rows);
+            Images.wallpaper = PostProcess.ResizeBitmap(wallpaper, (uint)GUI.screenX, (uint)GUI.screenY);
+            Images.wallpaperBlur = PostProcess.ResizeBitmap(PostProcess.DarkenBitmap(PostProcess.ApplyBlur(PostProcess.ResizeBitmap(wallpaper, 640, 360), 20), 0.5f), (uint)GUI.screenX, (uint)GUI.screenY);
             menu = new();
+            for (int i = 0; i < ProcessManager.running.Count; i++)
+            {
+                if (ProcessManager.running[i] is Window w)
+                { w.RefreshBorder(); }
+            }
         }
         public static Mode ResParse(string res)
         {
@@ -344,7 +326,7 @@ namespace NclearOS2.GUI
                 byteArray[i * 4 + 3] = colors[i].A; // alpha component
             }
             // create a new Bitmap object from the byte array
-            return new Bitmap((uint)x, (uint)y, byteArray, ColorDepth.ColorDepth32);
+            return new Bitmap((uint)x, (uint)y, byteArray, GUI.displayMode.ColorDepth);
         }
     }
     public class PostProcess
@@ -378,7 +360,7 @@ namespace NclearOS2.GUI
             }
 
             // Create a new bitmap with the modified data
-            bitmap = new Bitmap(bitmap.Width, bitmap.Height, ColorDepth.ColorDepth32);
+            bitmap = new Bitmap(bitmap.Width, bitmap.Height, GUI.displayMode.ColorDepth);
             bitmap.rawData = originalData;
             return bitmap;
         }
@@ -429,7 +411,7 @@ namespace NclearOS2.GUI
                     croppedData[croppedIndex] = originalData[originalIndex];
                 }
             }
-            bitmap = new Bitmap((uint)croppedWidth, (uint)croppedHeight, ColorDepth.ColorDepth32);
+            bitmap = new Bitmap((uint)croppedWidth, (uint)croppedHeight, GUI.displayMode.ColorDepth);
             bitmap.rawData = croppedData;
             return bitmap;
         }
@@ -487,7 +469,7 @@ namespace NclearOS2.GUI
             uint height = bitmap.Height;
 
             // create a temporary bitmap to store the blurred image
-            Bitmap blurredBitmap = new Bitmap(width, height, ColorDepth.ColorDepth32);
+            Bitmap blurredBitmap = new Bitmap(width, height, GUI.displayMode.ColorDepth);
             int[] blurredData = blurredBitmap.rawData;
             int[] originalData = bitmap.rawData;
 
@@ -552,12 +534,94 @@ namespace NclearOS2.GUI
         public static int fontX = GUI.font.Width;
         public static int fontY = GUI.font.Height;
         public static Dictionary<char, bool[]> charCache = new Dictionary<char, bool[]>();
+        public static Dictionary<char, bool[]> numCache = new Dictionary<char, bool[]>();
         public static void Main()
         {
             foreach (char c in "?ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+[{]}\\|;:'\",<.>/`~")
             {
                 charCache[c] = CreateCharCache(c);
             }
+
+            numCache.Add('0', new bool[] {
+    true, true, true,
+    true, false, true,
+    true, false, true,
+    true, false, true,
+    true, true, true
+});
+
+            numCache.Add('1', new bool[] {
+    false, true, false,
+    true, true, false,
+    false, true, false,
+    false, true, false,
+    true, true, true
+});
+
+            numCache.Add('2', new bool[] {
+    true, true, true,
+    false, false, true,
+    false, true, false,
+    true, false, false,
+    true, true, true
+});
+
+            numCache.Add('3', new bool[] {
+    true, true, true,
+    false, false, true,
+    false, true, false,
+    false, false, true,
+    true, true, true
+});
+
+            numCache.Add('4', new bool[] {
+    true, false, true,
+    true, false, true,
+    true, true, true,
+    false, false, true,
+    false, false, true
+});
+
+            numCache.Add('5', new bool[] {
+    true, true, true,
+    true, false, false,
+    true, true, true,
+    false, false, true,
+    true, true, true
+});
+
+            numCache.Add('6', new bool[] {
+    true, true, true,
+    true, false, false,
+    true, true, true,
+    true, false, true,
+    true, true, true
+});
+
+            numCache.Add('7', new bool[] {
+    true, true, true,
+    false, false, true,
+    false, false, true,
+    false, true, false,
+    false, true, false
+});
+
+            numCache.Add('8', new bool[] {
+    true, true, true,
+    true, false, true,
+    true, true, true,
+    true, false, true,
+    true, true, true
+});
+
+            numCache.Add('9', new bool[] {
+    true, true, true,
+    true, false, true,
+    true, true, true,
+    false, false, true,
+    true, true, true
+});
+
         }
         public static void DrawChar(char c, Color color, int x, int y)
         {
@@ -568,6 +632,22 @@ namespace NclearOS2.GUI
                 for (int px = 0; px < fontX; px++)
                 {
                     if (cache[py * fontX + px])
+                    {
+                        GUI.canvas.DrawPoint(new Pen(color), x + px, y + py);
+                    }
+                }
+            }
+        }
+
+        public static void DrawNum(char c, Color color, int x, int y)
+        {
+            if (!char.IsDigit(c)) { return; }
+            bool[] cache = numCache[c];
+            for (int py = 0; py < 5; py++)
+            {
+                for (int px = 0; px < 3; px++)
+                {
+                    if (cache[py * 3 + px])
                     {
                         GUI.canvas.DrawPoint(new Pen(color), x + px, y + py);
                     }
@@ -594,6 +674,15 @@ namespace NclearOS2.GUI
             {
                 DrawChar(c, color, x, y);
                 x += fontX;
+            }
+        }
+
+        public static void DrawNumbers(string str, Color color, int x, int y)
+        {
+            foreach (char c in str)
+            {
+                DrawNum(c, color, x, y);
+                x += 4;
             }
         }
 

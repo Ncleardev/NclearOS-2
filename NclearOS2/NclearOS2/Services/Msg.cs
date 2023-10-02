@@ -45,8 +45,8 @@ namespace NclearOS2
         }
         public static void Display(string value)
         {
-            GUI.GUI.canvas.DrawFilledRectangle(GUI.GUI.DarkPen, ((int)(GUI.GUI.displayMode.Columns - value.Length * 8) / 2) - 10, (int)(GUI.GUI.displayMode.Rows - 12) / 2, value.Length * 8 + 20, 24);
-            GUI.Font.DrawString(value, Color.White, (int)(GUI.GUI.displayMode.Columns - value.Length * 8) / 2, (int)(GUI.GUI.displayMode.Rows - 1) / 2);
+            GUI.GUI.canvas.DrawFilledRectangle(GUI.GUI.DarkPen, ((int)(GUI.GUI.screenX - value.Length * 8) / 2) - 10, (int)(GUI.GUI.screenY - 12) / 2, value.Length * 8 + 20, 24);
+            GUI.Font.DrawString(value, Color.White, (int)(GUI.GUI.screenX - value.Length * 8) / 2, (int)(GUI.GUI.screenY - 1) / 2);
         }
         public static void Force(string value)
         {

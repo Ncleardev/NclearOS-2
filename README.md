@@ -7,7 +7,7 @@
 [![](https://img.shields.io/github/forks/Ncleardev/NclearOS-2.svg)](https://github.com/Ncleardev/NclearOS-2/forks)
 [![](https://img.shields.io/github/stars/Ncleardev/NclearOS-2.svg)](https://github.com/Ncleardev/NclearOS-2/stargazers)
 [![](https://img.shields.io/github/issues/Ncleardev/NclearOS-2.svg)](https://github.com/Ncleardev/NclearOS-2/issues)
-[![](https://img.shields.io/github/issues-closed/Ncleardev/NclearOS-2.svg)]([https://github.com/Ncleardev/NclearOS-2/ssues](https://github.com/Ncleardev/NclearOS-2/issues?q=is%3Aissue+is%3Aclosed))
+[![](https://img.shields.io/github/issues-closed/Ncleardev/NclearOS-2.svg)](https://github.com/Ncleardev/NclearOS-2/issues?q=is%3Aissue+is%3Aclosed)
 
 ## Cosmos based operating system written in C# with GUI
 ## [Playlist on YT](https://youtube.com/playlist?list=PLjuew_ibisGV2tB8to_ESzlDNQwBTE6yk)

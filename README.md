@@ -18,10 +18,12 @@
 - User-friendly graphical user interface
 - Multitasking
 - Powerful Command System
+- Filesystem
+- Text editor
 - Blur effects
+- Personalization
 - Text (Console) Mode
 - Performance Watchdog
-- Basic Network capabilities
 - Screensaver
 - Advanced startup options and safe mode
 

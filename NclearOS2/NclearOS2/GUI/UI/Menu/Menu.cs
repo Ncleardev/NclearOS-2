@@ -4,38 +4,18 @@ using Cosmos.System.Graphics;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Intrinsics.X86;
 
 namespace NclearOS2.GUI
 {
     internal class Menu : Process
     {
-        public Menu() : base("Menu", Priority.Realtime, true)
-        {
-            if (appList.Count == 0)
-            {
-                appList.Add(("Settings", new Bitmap(Resources.Settings), () => ProcessManager.Run(new Settings())));
-                appList.Add(("Notepad", new Bitmap(Resources.Notepad), () => ProcessManager.Run(new Notepad((int)(GUI.screenX - 200), (int)(GUI.screenY - 170)))));
-                appList.Add(("Console", new Bitmap(Resources.ConsoleIcon), () => ProcessManager.Run(new ConsoleApp((int)(GUI.screenX - 200), (int)(GUI.screenY - 100)))));
-                appList.Add(("Files", new Bitmap(Resources.Files), () => ProcessManager.Run(new Files(640, (int)(GUI.screenY - 170)))));
-                appList.Add(("System Info", new Bitmap(Resources.InfoSystemIcon), () => ProcessManager.Run(new InfoSystem())));
-                appList.Add(("Process Manager", new Bitmap(Resources.TaskmngIcon), () => ProcessManager.Run(new TaskManager())));
-            }
-            if (Images.wallpaperBlur == null)
-            {
-                MemoryOperations.Fill(bar.rawData, GUI.SystemPen.ValueARGB);
-                //MemoryOperations.Fill(bgmn.rawData, GUI.SystemPen.ValueARGB);
-            }
-            else
-            {
-                bar = PostProcess.CropBitmap(Images.wallpaperBlur, 0, (int)GUI.screenY - 30, (int)GUI.screenX, 30);
-                //bgmn = PostProcess.CropBitmap(Images.wallpaperBlur, 0, (int)GUI.screenY - 340, 250, 310);
-            }
-        }
+        public Menu() : base("Menu", Priority.None) { Start(); }
         private static Bitmap bar;
-        //private static Bitmap bgmn;
+        private static Bitmap menuBitmap;
 
         public static bool Opened;
-        public int dClick;
+        public byte dClick;
 
         public static Bitmap start;
         public static Bitmap start2;
@@ -45,6 +25,38 @@ namespace NclearOS2.GUI
 
         internal override int Start()
         {
+            appList.Clear();
+            appList.Add(("Settings", new Bitmap(Resources.Settings), () => ProcessManager.Run(new Settings())));
+            appList.Add(("Notepad", new Bitmap(Resources.Notepad), () => ProcessManager.Run(new Notepad((int)(GUI.screenX - 200), (int)(GUI.screenY - 170)))));
+            appList.Add(("Console", new Bitmap(Resources.ConsoleIcon), () => ProcessManager.Run(new ConsoleApp((int)(GUI.screenX - 200), (int)(GUI.screenY - 100)))));
+            appList.Add(("Files", new Bitmap(Resources.Files), () => ProcessManager.Run(new Files(640, (int)(GUI.screenY - 170)))));
+            appList.Add(("System Info", new Bitmap(Resources.InfoSystemIcon), () => ProcessManager.Run(new InfoSystem())));
+            appList.Add(("Process Manager", new Bitmap(Resources.TaskmngIcon), () => ProcessManager.Run(new TaskManager())));
+            if (Images.wallpaperBlur == null)
+            {
+                MemoryOperations.Fill(bar.rawData, GUI.SystemPen.ValueARGB);
+                MemoryOperations.Fill(menuBitmap.rawData, GUI.SystemPen.ValueARGB);
+            }
+            else
+            {
+                bar = PostProcess.CropBitmap(Images.wallpaperBlur, 0, (int)GUI.screenY - 30, (int)GUI.screenX, 30);
+                menuBitmap = PostProcess.CropBitmap(Images.wallpaperBlur, 0, (int)GUI.screenY - 340, 249, 310);
+            }
+            int textY = 15;
+            foreach (var item in appList)
+            {
+                Font.DrawString(item.name, -1, 40, textY, menuBitmap.rawData, 249);
+                Font.DrawImageAlpha(item.icon, 10, textY - 5, menuBitmap.rawData, 249);
+                textY += 30;
+            }
+            Font.DrawImageAlpha(Icons.lockicon, 10, 220, menuBitmap.rawData, 249);
+            Font.DrawString("Lock", -1, 40, 225, menuBitmap.rawData, 249);
+
+            Font.DrawImageAlpha(Icons.reboot, 10, 250, menuBitmap.rawData, 249);
+            Font.DrawString("Restart", -1, 40, 255, menuBitmap.rawData, 249);
+
+            Font.DrawImageAlpha(Icons.shutdown, 10, 280, menuBitmap.rawData, 249);
+            Font.DrawString("Shutdown", -1, 40, 285, menuBitmap.rawData, 249);
             return 0;
         }
         internal override void Update()
@@ -56,7 +68,9 @@ namespace NclearOS2.GUI
             for (int i = 0; i < ProcessManager.running.Count; i++)
             {
                 if (ProcessManager.running[i] is Window w)
-                { GUI.canvas.DrawImageAlpha(w.icon, i * 40 + 50, (int)GUI.screenY - 27); }
+                {
+                    GUI.canvas.DrawImageAlpha(w.icon, i * 40 + 50, (int)GUI.screenY - 27);
+                }
             }
             if (MouseManager.Y > GUI.screenY - 30)
             {
@@ -87,17 +101,21 @@ namespace NclearOS2.GUI
                 {
                     if (!Opened) { GUI.canvas.DrawImageAlpha(start, 5, (int)GUI.screenY - 27); }
                     int clicked = ((int)MouseManager.X - 40) / 40;
-                    if (GUI.Pressed && clicked < ProcessManager.running.Count)
+                    if (clicked < ProcessManager.running.Count)
                     {
                         if (ProcessManager.running[clicked] is Window w && clicked < ProcessManager.running.Count(p => p is Window))
                         {
-                            if (clicked == 0 && !w.minimized)
+                            Font.DrawString(w.name, System.Drawing.Color.White, clicked * 40 + 40, (int)GUI.screenY - 45);
+                            if (GUI.Pressed)
                             {
-                                w.minimized = true;
-                            }
-                            else
-                            {
-                                WindowManager.FocusAtWindow(clicked);
+                                if (clicked == 0 && !w.minimized)
+                                {
+                                    w.minimized = true;
+                                }
+                                else
+                                {
+                                    WindowManager.FocusAtWindow(clicked);
+                                }
                             }
                         }
                     }
@@ -107,25 +125,10 @@ namespace NclearOS2.GUI
             { GUI.canvas.DrawImageAlpha(start, 5, (int)GUI.screenY - 27); }
             if (Opened)
             {
+                GUI.canvas.DrawImage(menuBitmap, 0, (int)GUI.screenY - 340);
                 GUI.canvas.DrawImageAlpha(start3, 5, (int)GUI.screenY - 27);
-                GUI.canvas.DrawFilledRectangle(GUI.SystemPen, 0, (int)GUI.screenY - 340, 250, 310);
-                //GUI.canvas.DrawImage(bgmn, 0, (int)GUI.screenY - 340);
-                int iconY = (int)GUI.screenY - 330;
-                int textY = (int)GUI.screenY - 325;
-                foreach (var item in appList)
-                {
-                    GUI.canvas.DrawString(item.name, GUI.font, GUI.WhitePen, 40, textY);
-                    GUI.canvas.DrawImageAlpha(item.icon, 10, iconY);
-                    iconY += 30; textY += 30;
-                }
-                GUI.canvas.DrawImageAlpha(Icons.lockicon, 10, (int)GUI.screenY - 120);
-                GUI.canvas.DrawString("Lock", GUI.font, GUI.WhitePen, 40, (int)GUI.screenY - 115);
+                //GUI.canvas.DrawFilledRectangle(GUI.SystemPen, 0, (int)GUI.screenY - 340, 250, 310);
 
-                GUI.canvas.DrawImageAlpha(Icons.reboot, 10, (int)GUI.screenY - 90);
-                GUI.canvas.DrawString("Restart", GUI.font, GUI.WhitePen, 40, (int)GUI.screenY - 85);
-
-                GUI.canvas.DrawImageAlpha(Icons.shutdown, 10, (int)GUI.screenY - 60);
-                GUI.canvas.DrawString("Shutdown", GUI.font, GUI.WhitePen, 40, (int)GUI.screenY - 55);
                 if (GUI.Pressed)
                 {
                     if (MouseManager.Y < (int)GUI.screenY - 340 | MouseManager.X > 250)

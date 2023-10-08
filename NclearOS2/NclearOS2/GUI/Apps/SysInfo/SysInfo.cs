@@ -29,11 +29,17 @@ namespace NclearOS2
         {
             get { return InstalledRAM - (uint)UsedRAM; }
         }
+        public static string CPUuptime
+        {
+            get { return TimeSpan.FromSeconds(CPU.GetCPUUptime() / 3200000000).ToString(@"hh\:mm\:ss"); }
+        }
+        public static string DisplayRes
+        {
+            get { return Kernel.GUIenabled ? "Display: " + GUI.GUI.canvas.Mode : "Console Display: " + System.Console.WindowWidth + "x" + System.Console.WindowHeight; }
+        }
         public static string Main()
         {
-            TimeSpan uptime = TimeSpan.FromSeconds(CPU.GetCPUUptime() / 3200000000);
-            return Kernel.GUIenabled ? Kernel.OSVERSION + "\nDisplay: " + GUI.GUI.canvas.Mode                                                    + "\nCPU: " + CPUname + "\nCPU Uptime: " + uptime.ToString(@"hh\:mm\:ss")
-                                     : Kernel.OSVERSION + "\nConsole Display: " + System.Console.WindowWidth + "x" + System.Console.WindowHeight + "\nCPU: " + CPUname + "\nCPU Uptime: " + uptime.ToString(@"hh\:mm\:ss");
+            return Kernel.OSVERSION + "\n" + DisplayRes +"\nCPU: " + CPUname + "\nCPU Uptime: " + CPUuptime;
         }
         public static string Ram()
         {
@@ -45,7 +51,7 @@ namespace NclearOS2.GUI
 {
     internal class InfoSystem: Window
     {
-        internal InfoSystem() : base("SysInfo", 500, 200, new Bitmap(Resources.InfoSystemIcon), Priority.High) { }
+        internal InfoSystem() : base("System Info", 500, 200, new Bitmap(Resources.InfoSystemIcon), Priority.High) { }
         internal override int Start()
         {
             MemoryOperations.Fill(appCanvas.rawData, GUI.DarkGrayPen.ValueARGB);

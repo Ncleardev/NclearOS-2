@@ -12,7 +12,7 @@ namespace NclearOS2.GUI
         {
             try
             {
-                if (Kernel.useDisks && !Kernel.safeMode && VFSManager.DirectoryExists(Kernel.SYSTEMPATH) && VFSManager.FileExists(Kernel.SYSTEMCONFIG))
+                if (Kernel.useDisks && !Kernel.safeMode && System.IO.File.Exists(Kernel.SYSTEMCONFIG))
                 {
                     string[] lines = System.IO.File.ReadAllLines(Kernel.SYSTEMCONFIG);
                     foreach (string line in lines)
@@ -33,7 +33,7 @@ namespace NclearOS2.GUI
             int i = 0;
             try
             {
-                if (Kernel.useDisks && !Kernel.safeMode && VFSManager.DirectoryExists(Kernel.SYSTEMPATH) && VFSManager.FileExists(Kernel.USERCONFIG))
+                if (Kernel.useDisks && !Kernel.safeMode && System.IO.File.Exists(Kernel.USERCONFIG))
                 {
                     string[] lines = System.IO.File.ReadAllLines(Kernel.USERCONFIG);
                     foreach (string line in lines)
@@ -46,8 +46,9 @@ namespace NclearOS2.GUI
                         {
                             if (line == "CursorType: 1")
                             {
-                                Icons.cursor = Settings.cursor2;
-                                Icons.cursorload = Settings.cursor2L;
+                                Icons.cursor = new Bitmap(Resources.CursorWhite);
+                                Icons.cursorload = new Bitmap(Resources.CursorWhiteLoad);
+                                Settings.cursorWhite = true;
                             }
                         }
                         else if (line.Contains("ColorTheme: "))
@@ -62,7 +63,8 @@ namespace NclearOS2.GUI
                     }
                 }
             }
-            catch { }
+            catch (Exception e) { Toast.Force(e.Message); System.Console.ReadLine(); }
+            Settings.wallpapernum = i;
             return i;
         }
         public static void Save()
@@ -71,11 +73,13 @@ namespace NclearOS2.GUI
             {
                 if (Kernel.useDisks && !Kernel.safeMode)
                 {
-                    F.Save(Kernel.SYSTEMCONFIG, "NclearOS 2 System Config\nScreenRes: " + GUI.screenX + "x" + GUI.screenY + "\n              ");
-                    F.Save(Kernel.USERCONFIG, "NclearOS 2 User Config\nWallpaperNum: " + Convert.ToString(Settings.wallpapernum) + "\nCursorType: " + (Settings.cursorWhite ? 1 : 0) + "\nColorTheme: " + Convert.ToString(GUI.SystemPen) + "\n              ");
+                    if (!VFSManager.DirectoryExists(Kernel.PROGRAMSDATAPATH)) { F.NewFolder(Kernel.PROGRAMSDATAPATH, true); }
+                    F.Save(Kernel.SYSTEMCONFIG, "NclearOS 2 System Config\nScreenRes: " + GUI.screenX + "x" + GUI.screenY + "\n              ", true);
+                    if (!VFSManager.DirectoryExists(Kernel.USERPROGRAMSDATAPATH)) { F.NewFolder(Kernel.USERPROGRAMSDATAPATH, true); }
+                    F.Save(Kernel.USERCONFIG, "NclearOS 2 User Config\nWallpaperNum: " + Convert.ToString(Settings.wallpapernum) + "\nCursorType: " + (Settings.cursorWhite ? 1 : 0) + "\nColorTheme: " + Convert.ToString(GUI.SystemPen) + "\n              ", true);
                 }
             }
-            catch (Exception e) { Toast.Force("Failed saving user settings; " + e); System.Console.ReadKey(); }
+            catch (Exception e) { Toast.Force("Failed saving user settings; " + e); Thread.Sleep(1000); }
         }
     }
 }

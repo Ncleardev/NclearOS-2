@@ -78,6 +78,8 @@ namespace NclearOS2.GUI
         public static byte[] DiskIcon;
         [ManifestResourceStream(ResourceName = "NclearOS2.GUI.Apps.Files.file.bmp")]
         public static byte[] FileIcon;
+        [ManifestResourceStream(ResourceName = "NclearOS2.GUI.Apps.Files.refresh.bmp")]
+        public static byte[] RefreshIcon;
 
         //Menu
         [ManifestResourceStream(ResourceName = "NclearOS2.GUI.UI.Menu.reboot.bmp")]

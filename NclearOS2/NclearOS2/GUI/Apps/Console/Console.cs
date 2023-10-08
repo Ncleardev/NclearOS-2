@@ -16,8 +16,7 @@ namespace NclearOS2.GUI
             get { return Input; }
             set
             {
-                if (value == null) { Input = null; }
-                else if (shell != null)
+                if (shell != null)
                 {
                     if (value.Length < Input.Length) { UI(); }
                     Input = value;
@@ -29,7 +28,7 @@ namespace NclearOS2.GUI
         private int position = 0;
         private CommandShell shell;
         internal ConsoleApp(int x, int y) : base("Console", x, y, new Bitmap(Resources.ConsoleIcon), Priority.None) { OnKeyPressed = Key; }
-        internal override void Update() { }
+        internal override void Update() { throw new Exception("Manual Crash"); }
         internal override int Start()
         {
             shell = new CommandShell { crashClient = ExecuteError, update = Result };
@@ -48,8 +47,8 @@ namespace NclearOS2.GUI
                     GUI.Loading = true;
                     GUI.Refresh();
                     history.Add(input);
-                    try { shell.Execute(input); }
-                    catch (Exception e) { shell = null; HandleShellCrash(e.ToString()); }
+                    try { if(shell.Execute(input) == 2) { shell.print += "Wrong parameter"; } }
+                    catch (Exception e) { shell = null; HandleShellCrash(e.Message); }
                     input = null;
                     GUI.Loading = false;
                     break;
@@ -90,7 +89,7 @@ namespace NclearOS2.GUI
         }
         private void ExecuteError()
         {
-            throw new Exception("Manual crash");
+            this.priority = Priority.Realtime;
         }
         private void HandleShellCrash(string err)
         {

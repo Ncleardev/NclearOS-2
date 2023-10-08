@@ -1,6 +1,7 @@
 ﻿using Cosmos.Core;
 using Cosmos.Core.Memory;
 using Cosmos.HAL;
+using Cosmos.HAL.BlockDevice;
 using Cosmos.System;
 using Cosmos.System.Graphics;
 using Cosmos.System.Graphics.Fonts;
@@ -20,6 +21,7 @@ namespace NclearOS2.GUI
         public static int fps;
         private static int fps2;
         private static int frames;
+        private static bool displayFPS = true;
 
         public static bool wasClicked;
 
@@ -34,9 +36,9 @@ namespace NclearOS2.GUI
         public static bool StartClick;
         public static bool LongPress;
         public static bool Loading;
-        public static bool HideCursor;
+        public static bool DisplayCursor;
 
-        public static VBECanvas canvas;
+        public static Canvas canvas;
 
         public static readonly Pen WhitePen = new(Color.White);
         public static readonly Pen GrayPen = new(Color.Gray);
@@ -51,37 +53,39 @@ namespace NclearOS2.GUI
         public static Pen SystemPen = BluePen;
 
         public static PCScreenFont font;
-
         private static Menu menu;
+
         public static int wallpapernum;
 
-        public static void Init()
+        public static string Init(string overrideRes = null)
         {
-            NclearOS2.Sysinfo.CPUname = "Unknown";
-            if (!Kernel.GUIenabled)
+            try
             {
-                if (Kernel.safeMode) { displayMode = new(800, 600, ColorDepth.ColorDepth32); }
-                //else if (Kernel.useDisks) { displayMode = Profiles.LoadSystem(); }
-                else { NclearOS2.Sysinfo.CPUname = CPU.GetCPUBrandString(); }
-                try { SetRes(displayMode, true); }
-                catch (Exception e) { TextMode.BootMenu(e.Message); }
-            }
-            font = PCScreenFont.Default;
-            //if (!Kernel.safeMode) { canvas.DrawImage(new Bitmap(Resources.Wallpaper), 0, 0); canvas.DrawFilledRectangle(DarkPen, ((int)(GUI.screenX - "Starting NclearOS".Length * 8) / 2) - 10, (int)(GUI.screenY - 12) / 2, "Starting NclearOS".Length * 8 + 20, 24); }
-            canvas.DrawString("Starting NclearOS", font, GUI.WhitePen, (int)(GUI.screenX - "Starting NclearOS".Length * 8) / 2, (int)(GUI.screenY - 1) / 2);
-            canvas.Display();
+                if (overrideRes != null) { displayMode = ResParse(overrideRes); }
+                else if (Kernel.safeMode) { displayMode = new(800, 600, ColorDepth.ColorDepth32); }
+                else if (Kernel.useDisks) { displayMode = Profiles.LoadSystem(); }
+                SetRes(displayMode, true, true);
+                Lock = true;
+                MouseManager.X = (uint)GUI.screenX / 2;
+                MouseManager.Y = (uint)GUI.screenY / 2;
+                //if (!Kernel.safeMode) { canvas.DrawImage(new Bitmap(Resources.Wallpaper), 0, 0); canvas.DrawFilledRectangle(DarkPen, ((int)(GUI.screenX - "Starting NclearOS".Length * 8) / 2) - 10, (int)(GUI.screenY - 12) / 2, "Starting NclearOS".Length * 8 + 20, 24); }
+                //canvas.DrawString("NclearOS", font, new Pen(Color.LimeGreen), (int)(GUI.screenX - "NclearOS".Length * font.Width) / 2, (int)(GUI.screenY - font.Height * 2) / 2);
+                canvas.DrawImageAlpha(new Bitmap(Resources.CursorLoad), (int)(GUI.screenX) / 2, (int)(GUI.screenY) / 2);
+                canvas.Display();
 
-            Resources.InitResources();
-            Font.Main();
-
-            if (!Kernel.safeMode)
-            {
-                if (Kernel.useDisks)
+                if(font == null)
                 {
-                    //canvas.DrawImage(new Bitmap(Resources.WallpaperLock), 0, 0);
+                    font = PCScreenFont.Default;
+                    Resources.InitResources();
+                    Font.Main();
+                }
+
+                if (!Kernel.safeMode)
+                {
                     //Toast.Display("Loading user settings...");
                     //canvas.Display();
-                    switch (0)
+                    Settings.wallpapernum = Profiles.LoadUser();
+                    switch (Settings.wallpapernum)
                     {
                         case 1:
                             ApplyRes(new Bitmap(Resources.WallpaperOld)); break;
@@ -96,25 +100,27 @@ namespace NclearOS2.GUI
                         default:
                             ApplyRes(new Bitmap(Resources.Wallpaper)); break;
                     }
+                    ProcessManager.Run(new ScreenSaverService());
+                    ProcessManager.Run(new PerformanceWatchdog());
+                    NclearOS2.Net.Start();
                 }
                 else
                 {
-                    //Msg.Main("Information", "No valid FAT32 partitions found; File system is now disabled.", Icons.info);
-                    ApplyRes(new Bitmap(Resources.Wallpaper));
+                    Images.wallpaper = new Bitmap(800, 600, ColorDepth.ColorDepth32);
+                    MemoryOperations.Fill(Images.wallpaper.rawData, Color.CadetBlue.ToArgb());
+                    Images.wallpaperBlur = new Bitmap(800, 600, ColorDepth.ColorDepth32);
+                    menu = new();
                 }
-                ProcessManager.Run(new ScreenSaverService());
-                ProcessManager.Run(new Net());
+                ProcessManager.Run(new GlobalInput());
+                DisplayCursor = true;
+                return "OK";
             }
-            else
+            catch (Exception e)
             {
-                Images.wallpaper = new Bitmap(800, 600, ColorDepth.ColorDepth32);
-                Images.wallpaperBlur = new Bitmap(800, 600, ColorDepth.ColorDepth32);
-                menu = new();
+                Kernel.GUIenabled = false;
+                try { canvas.Disable(); } catch { }
+                return e.Message;
             }
-            ProcessManager.Run(new GlobalInput());
-            ProcessManager.Run(new PerformanceWatchdog());
-            MouseManager.X = (uint)GUI.screenX;
-            MouseManager.Y = (uint)GUI.screenY;
         }
         public static void Refresh()
         {
@@ -141,7 +147,7 @@ namespace NclearOS2.GUI
                     {
                         Pressed = true;
                         OneClick = false;
-                        if(!screenSaver && !Lock) { ProcessManager.Click((int)MouseManager.X, (int)MouseManager.Y); }
+                        if(!screenSaver && !Lock && MouseManager.Y > 30) { ProcessManager.Click((int)MouseManager.X, (int)MouseManager.Y); }
                     }
                     StartOneClick = false;
                     StartClick = false;
@@ -155,7 +161,7 @@ namespace NclearOS2.GUI
                 if (Lock) { LockScreen.Update(); }
                 else
                 {
-                    if (!Kernel.safeMode) { canvas.DrawImage(Images.wallpaper, 0, 0); } else { canvas.Clear(Color.CadetBlue); }
+                    canvas.DrawImage(Images.wallpaper, 0, 0);
                     ProcessManager.Refresh();
                     menu.Update();
                 }
@@ -168,11 +174,14 @@ namespace NclearOS2.GUI
             }
             
             Toast.Update();
-            if (!HideCursor) { if (Loading) { canvas.DrawImageAlpha(Icons.cursorload, (int)MouseManager.X, (int)MouseManager.Y); } else { canvas.DrawImageAlpha(Icons.cursor, (int)MouseManager.X, (int)MouseManager.Y); } }
-            
-            GUI.canvas.DrawFilledRectangle(DarkPen, (int)GUI.screenX - 14, 0, 14, 7);
-            Font.DrawNumbers(Convert.ToString(fps), Color.Yellow, (int)GUI.screenX - 13, 1);
-            
+            if (DisplayCursor) { if (Loading) { canvas.DrawImageAlpha(Icons.cursorload, (int)MouseManager.X, (int)MouseManager.Y); } else { canvas.DrawImageAlpha(Icons.cursor, (int)MouseManager.X, (int)MouseManager.Y); } }
+
+            if (displayFPS)
+            {
+                GUI.canvas.DrawFilledRectangle(DarkPen, (int)GUI.screenX - 14, 0, 14, 7);
+                Font.DrawNumbers(Convert.ToString(fps), Color.Yellow, (int)GUI.screenX - 13, 1);
+            }
+
             Heap.Collect();
             canvas.Display();
         }
@@ -192,35 +201,50 @@ namespace NclearOS2.GUI
                 Thread.Sleep(1000);
             }
             canvas.DrawImage(Images.wallpaperBlur, 0, 0);
-            //if (Kernel.useDisks && !Kernel.safeMode)
-            //{
-            //    Toast.Display("Saving user settings...");
-            //    canvas.Display();
-            //    Profiles.Save();
-            //    Thread.Sleep(500);
-            //    canvas.DrawImage(Images.wallpaperLock, 0, 0);
-            //}
+            if (Kernel.useDisks && !Kernel.safeMode)
+            {
+                Toast.Force("Saving user settings...");
+                Profiles.Save();
+                Thread.Sleep(500);
+                canvas.DrawImage(Images.wallpaperBlur, 0, 0);
+            }
             Toast.Display(restart ? "Restarting..." : "Shutting down...");
             canvas.Display();
-            Thread.Sleep(500);
+            Toast.msg = null;
             Kernel.GUIenabled = false;
         }
-        public static string SetRes(Mode mode, bool fast = false)
+        public static string SetRes(Mode mode, bool fast = false, bool boot = false)
         {
             try
             {
+                //canvas = new VBECanvas(new Mode(1280, 800, ColorDepth.ColorDepth32));
                 canvas = (VBECanvas)FullScreenCanvas.GetFullScreenCanvas(mode);
-                displayMode = mode;
-                MouseManager.ScreenWidth = (uint)mode.Columns - 1;
-                MouseManager.ScreenHeight = (uint)mode.Rows;
             }
             catch (Exception e)
             {
-                throw new Exception("Error: Resolution " + mode.Columns + "x" + mode.Rows + " is not available; " + e);
+                if (!boot) { SetRes(displayMode, fast); }
+                throw new Exception("Resolution " + mode.Columns + "x" + mode.Rows + " is not available; " + e);
             }
+            displayMode = mode;
+            MouseManager.ScreenWidth = (uint)mode.Columns - 5;
+            MouseManager.ScreenHeight = (uint)mode.Rows;
             if (!fast)
             {
-                ApplyRes(new Bitmap(Resources.Wallpaper));
+                switch (Settings.wallpapernum)
+                {
+                    case 1:
+                        ApplyRes(new Bitmap(Resources.WallpaperOld)); break;
+                    case 2:
+                        ApplyRes(new Bitmap(Resources.WallpaperLock)); break;
+                    case 3:
+                        ApplyRes(new Bitmap(Resources.WallpaperOrigami)); break;
+                    case 4:
+                        ApplyRes(new Bitmap(Resources.Wallpaper2005s)); break;
+                    case 5:
+                        ApplyRes(new Bitmap(Resources.WallpaperCosmos)); break;
+                    default:
+                        ApplyRes(new Bitmap(Resources.Wallpaper)); break;
+                }
             }
             Kernel.GUIenabled = true;
             return "Successfully changed resolution to " + mode.Columns + "x" + mode.Rows; // mode.ColorDepth.ToString() not implemented
@@ -276,59 +300,6 @@ namespace NclearOS2.GUI
             };
         }
     }
-    public class Buffer
-    {
-        public static Color[] GetBuffer(int StartX, int StartY, int x2, int y2)
-        {
-            Color[] colors = new Color[x2 * y2];
-            for (int y = 0; y < y2; y++)
-            {
-                for (int x = 0; x < x2; x++)
-                {
-                    colors[y * x2 + x] = GUI.canvas.GetPointColor((int)(StartX + x), (int)StartY + y);
-                }
-            }
-            return colors;
-        }
-        public static Bitmap GetBitmap(int StartX, int StartY, int x2, int y2)
-        {
-            int[] colors = new int[x2 * y2];
-            for (int y = 0; y < y2; y++)
-            {
-                for (int x = 0; x < x2; x++)
-                {
-                    colors[y * x2 + x] = GUI.canvas.GetPointColor((int)(StartX + x), (int)StartY + y).ToArgb();
-                }
-            }
-            return new Bitmap("");
-        }
-        public static void DrawBuffer(Color[] colors, int StartX, int StartY, int x2, int y2)
-        {
-            for (int y = 0; y < y2; y++)
-            {
-                for (int x = 0; x < x2; x++)
-                {
-                    GUI.canvas.DrawPoint(new Pen(colors[y * x2 + x]), StartX + x, StartY + y);
-                }
-            }
-        }
-        public static Bitmap ConvertToBitmap(Color[] colors, int x, int y)
-        {
-            // create a new byte array with enough space for all the colors
-            byte[] byteArray = new byte[colors.Length * 4];
-
-            // loop through the colors and copy each color to the byte array
-            for (int i = 0; i < colors.Length; i++)
-            {
-                byteArray[i * 4 + 0] = colors[i].B; // blue component
-                byteArray[i * 4 + 1] = colors[i].G; // green component
-                byteArray[i * 4 + 2] = colors[i].R; // red component
-                byteArray[i * 4 + 3] = colors[i].A; // alpha component
-            }
-            // create a new Bitmap object from the byte array
-            return new Bitmap((uint)x, (uint)y, byteArray, GUI.displayMode.ColorDepth);
-        }
-    }
     public class PostProcess
     {
         public static Bitmap DarkenBitmap(Bitmap bitmap, float factor)
@@ -364,7 +335,6 @@ namespace NclearOS2.GUI
             bitmap.rawData = originalData;
             return bitmap;
         }
-
         public static Bitmap ResizeBitmap(Bitmap bmp, uint nX, uint nY)
         {
             if (bmp.Width == nX && bmp.Height == nY)
@@ -414,54 +384,6 @@ namespace NclearOS2.GUI
             bitmap = new Bitmap((uint)croppedWidth, (uint)croppedHeight, GUI.displayMode.ColorDepth);
             bitmap.rawData = croppedData;
             return bitmap;
-        }
-
-        public static Color[] ApplyBlur(Color[] colors, int x2, int y2, int blurRadius)
-        {
-            // create a temporary color array to store the blurred colors
-            Color[] blurredColors = new Color[colors.Length];
-
-            // calculate the Gaussian kernel
-            double[] kernel = new double[blurRadius * 2 + 1];
-            double sigma = blurRadius / 3.0;
-            double sum = 0;
-            for (int i = 0; i < kernel.Length; i++)
-            {
-                double x = i - blurRadius;
-                kernel[i] = Math.Exp(-(x * x) / (2 * sigma * sigma));
-                sum += kernel[i];
-            }
-
-            // normalize the kernel
-            for (int i = 0; i < kernel.Length; i++)
-            {
-                kernel[i] /= sum;
-            }
-
-            // loop through the colors and apply the blur effect
-            for (int y = 0; y < y2; y++)
-            {
-                for (int x = 0; x < x2; x++)
-                {
-                    double r = 0, g = 0, b = 0;
-                    for (int i = -blurRadius; i <= blurRadius; i++)
-                    {
-                        int idx = x + i;
-                        if (idx < 0 || idx >= x2)
-                        {
-                            idx = x;
-                        }
-                        Color color = colors[y * x2 + idx];
-                        double weight = kernel[i + blurRadius];
-                        r += color.R * weight;
-                        g += color.G * weight;
-                        b += color.B * weight;
-                    }
-                    int idx2 = y * x2 + x;
-                    blurredColors[idx2] = Color.FromArgb((int)r, (int)g, (int)b);
-                }
-            }
-            return blurredColors;
         }
         public static Bitmap ApplyBlur(Bitmap bitmap, int blurRadius)
         {
@@ -516,17 +438,6 @@ namespace NclearOS2.GUI
             }
 
             return blurredBitmap;
-        }
-
-
-        public static Color[] ApplyAlpha(Color[] colors1, Color[] colors2, byte alpha)
-        {
-            Color[] result = new Color[colors1.Length];
-            for (int i = 0; i < colors1.Length; i++)
-            {
-                //result[i] = GUI.canvas.AlphaBlend(colors1[i], colors2[i], alpha);
-            }
-            return result;
         }
     }
     public class Font

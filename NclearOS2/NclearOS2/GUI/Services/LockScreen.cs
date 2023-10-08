@@ -43,7 +43,7 @@ namespace NclearOS2.GUI
                     }
                 }
             }
-            if (Kernel.safeMode) { GUI.canvas.Clear(Color.CadetBlue); } else { GUI.canvas.DrawImage(Images.wallpaperBlur, 0, 0); }
+            GUI.canvas.DrawImage(Images.wallpaperBlur, 0, 0);
             GUI.canvas.DrawImageAlpha(Icons.shutdown, 10, (int)GUI.screenY - 35);
             Font.DrawString(NclearOS2.Date.CurrentTime(false),Color.White, (int)GUI.screenX / 2 - 30, (int)GUI.screenY / 3 - 80);
             Font.DrawString(NclearOS2.Date.CurrentDate(true, false),Color.White, (int)GUI.screenX / 2 - 80, (int)GUI.screenY / 3 - 60);

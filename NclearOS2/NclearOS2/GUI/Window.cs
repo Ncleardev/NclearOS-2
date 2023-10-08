@@ -38,7 +38,7 @@ namespace NclearOS2.GUI
         internal Action OnMoved;
         internal Action OnBackgroundChange;
 
-        public void DrawChar(char c, int color, int bg, int[] canvas, int canvasWidth, int x2, int y2)
+        public bool DrawChar(char c, int color, int bg, int[] canvas, int canvasWidth, int x2, int y2)
         {
             int fontY = Font.fontY;
             int fontX = Font.fontX;
@@ -51,7 +51,7 @@ namespace NclearOS2.GUI
                         canvas[(y2 + py) * canvasWidth + (x2 + px)] = bg;
                     }
                 }
-                return;
+                return x2 > canvasWidth - fontX * 2;
             }
             bool[] cache = Font.charCache[c];
             for (int py = 0; py < fontY; py++)
@@ -61,6 +61,7 @@ namespace NclearOS2.GUI
                     canvas[(y2 + py) * canvasWidth + (x2 + px)] = cache[py * fontX + px] ? color : bg;
                 }
             }
+            return x2 > canvasWidth - fontX * 2;
         }
         public void DrawCharAlpha(char c, int color, int[] canvas, int canvasWidth, int x2, int y2)
         {
@@ -87,9 +88,9 @@ namespace NclearOS2.GUI
             int ogX = x2;
             foreach (char c in str)
             {
+                if (y2 + Font.fontY > y) { return; }
                 if (c == '\n') { y2 += 20; x2 = ogX; continue; }
-                DrawChar(c, color, bg, appCanvas.rawData, x, x2, y2);
-                if(x2+Font.fontX > x) { return; }
+                if(DrawChar(c, color, bg, appCanvas.rawData, x, x2, y2)) { y2 += 14; x2 = ogX; continue; }
                 x2 += Font.fontX;
             }
         }

@@ -32,6 +32,7 @@ namespace NclearOS2.GUI
                 DrawString(CD, Color.White.ToArgb(), GUI.DarkGrayPen.ValueARGB, 5, 25);
                 DrawHorizontalLine(Color.White.ToArgb(), CD.Length * Font.fontX + 10, 32, x - 10);
                 if(CD != "Computer") { DrawString("<  ^  New File  New Folder", Color.White.ToArgb(), GUI.DarkGrayPen.ValueARGB, 10, 5); }
+                DrawImageAlpha(refreshIcon, x - 20, 5);
                 DrawString(RefreshList(), Color.White.ToArgb(), GUI.DarkGrayPen.ValueARGB, 10, this.y - 30);
                 int i = -1;
                 foreach (var el in listresult)
@@ -46,6 +47,7 @@ namespace NclearOS2.GUI
 
         private static Bitmap diskIcon = new Bitmap(Resources.DiskIcon);
         private static Bitmap fileIcon = new Bitmap(Resources.FileIcon);
+        private static Bitmap refreshIcon = new Bitmap(Resources.RefreshIcon);
 
         public static string tempPath;
         public static string tempName;
@@ -87,15 +89,6 @@ namespace NclearOS2.GUI
                             }
                             CD = CD;
                             break;
-                    }
-                    if (KeyboardManager.ControlPressed)
-                    {
-                        switch (key.Key)
-                        {
-                            case ConsoleKeyEx.N:
-                                if (KeyboardManager.ShiftPressed) { F.NewFolder(CD); }
-                                break;
-                        }
                     }
                 }
                 if (KeyboardManager.AltPressed)
@@ -194,6 +187,7 @@ namespace NclearOS2.GUI
                 if(CD == "Computer" && selY != -1 && x < 70)
                 {
                     F.Format(Convert.ToInt32(listresult[selY][1].Split(':')[0]));
+                    
                 }
                 else if(x < 25)
                 {
@@ -235,6 +229,7 @@ namespace NclearOS2.GUI
                         F.CopyFile(CD + "\\" + listresult[selY][1]);
                     }
                 }
+                else if (x > this.x - 25) { }
                 else { GUI.Loading = false; return; }
                 CD = CD;
             }
@@ -294,7 +289,7 @@ namespace NclearOS2.GUI
                 }
                 catch (Exception e)
                 {
-                    listresult.Add(new string[] { "UNKNOWN", e.ToString() });
+                    listresult.Add(new string[] { "UNKNOWN", e.Message });
                 }
             }
             if (dircount == 1) { status += ("Total: " + dircount + " Folder | "); }

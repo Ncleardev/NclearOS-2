@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Threading.Tasks;
+using static NclearOS2.GUI.Process;
 
 namespace NclearOS2.GUI
 {
@@ -33,7 +34,7 @@ namespace NclearOS2.GUI
             }
             for (int i = running.Count; i > 0; i--)
             {
-                uint j = GCImplementation.GetUsedRAM() / 1024;
+                uint j = GCImplementation.GetUsedRAM();
 
                 running[i - 1].id = i - 1;
 
@@ -45,43 +46,55 @@ namespace NclearOS2.GUI
                 if (highpriority && running[i - 1].priority == Process.Priority.High) { Update(i - 1); }
                 if (lowpriority && running[i - 1].priority == Process.Priority.Low) { Update(i - 1); }
 
-                running[i - 1].usageRAM = GCImplementation.GetUsedRAM() / 1024 - j;
+                running[i - 1].usageRAM += (GCImplementation.GetUsedRAM() - j) / 1024;
             }
         }
         public static void Update(int id)
         {
             try { running[id].Update(); }
-            catch (Exception e) { Msg.Main("Error", "Process '" + running[id].name + "' crashed: " + e, Icons.error); RemoveAt(id, true); }
+            catch (Exception e) { string name = running[id].name; RemoveAt(id); Msg.Main("Error", "Process '" + name + "' crashed: " + e, Icons.error); }
         }
-        internal static void Run(Process process)
+        internal static Process Run(Process process)
         {
             GUI.Loading = true;
             GUI.Refresh();
+            uint j = GCImplementation.GetUsedRAM();
             process.id = 0;
             int code = process.Start();
-            if (code == -1) { GUI.Loading = false; return; }
-            else if (code != 0) { Msg.Main("Process Manager", "Process '" + process.name + " launched and then stopped with an unexpected error code: " + code, Icons.warn); GUI.Loading = false; return; }
+            if (code == -1) { GUI.Loading = false; return null; }
+            else if (code != 0) { Msg.Main("Process Manager", "Process '" + process.name + " launched and then stopped with an unexpected error code: " + code, Icons.warn); GUI.Loading = false; return null; }
+            process.usageRAM = (GCImplementation.GetUsedRAM() - j) / 1024;
             GUI.Refresh();
             running.Insert(0, process);
             running[0].id = 0;
             GUI.Loading = false;
+            return process;
         }
         public static int RemoveAt(int i, bool force = false)
         {
+            GUI.Loading = true;
             int exitCode = running[i].Stop();
             //GCImplementation.Free(running[i]);
             if (force || exitCode == 0) { running.RemoveAt(i); }
-            else if (exitCode != -1) {
-                Msg.Main("Process Manager", "Process '" + running[i].name + " stopped with an unexpected error code: " + exitCode, Icons.warn); running.RemoveAt(i);
+            else if (exitCode != -1)
+            {
+                string name = running[i].name;
+                running.RemoveAt(i);
+                Msg.Main("Process Manager", "Process '" + name + " stopped with an unexpected error code: " + exitCode, Icons.warn);
             }
+            GUI.Loading = false;
             return exitCode;
         }
         public static string StopAll()
         {
+            foreach(Process process in running) { process.Stop(); }
+            running.Clear();
+            return null;
             GUI.Loading = true;
             GUI.Refresh();
             string result = null;
-            for (int i = 0; i < running.Count; i++)
+            int j = running.Count;
+            for (int i = 0; i < j; i++)
             {
                 if (RemoveAt(i) == -1)
                 {
@@ -91,7 +104,6 @@ namespace NclearOS2.GUI
                     }
                     else { result += "; " + running[i].name; }
                 }
-                GUI.Refresh();
             }
             GUI.Loading = false;
             return result;
@@ -108,12 +120,23 @@ namespace NclearOS2.GUI
                         if (x > w.StartX && x < w.StartX + w.x && y > w.StartY + 30 && y < w.StartY + w.y + 30)
                         {
                             WindowManager.FocusAtWindow(i);
-                            w?.OnClicked?.Invoke(x - w.StartX, y - w.StartY - 30);
+                            try { w?.OnClicked?.Invoke(x - w.StartX, y - w.StartY - 30); } catch(Exception e) { Msg.Main("Error", "Process '" + w.name + "' encountered an error: " + e, Icons.error); }
                             return;
                         }
                     }
                 }
             }
+        }
+        public static string GetPriority(int id)
+        {
+            return running[id].priority switch
+            {
+                Priority.High => "High",
+                Priority.Low => "Low",
+                Priority.Realtime => "Realtime",
+                Priority.None => "None",
+                _ => "Unknown",
+            };
         }
     }
     public static class WindowManager
@@ -193,7 +216,9 @@ namespace NclearOS2.GUI
     }
     internal class TaskManager : Window
     {
-        internal TaskManager() : base("Process Manager", 400, 400, new Bitmap(Resources.TaskmngIcon), Priority.High) { }
+        internal TaskManager() : base("Process Manager", 400, 400, new Bitmap(Resources.TaskmngIcon), Priority.High) { OnClicked = Clicked; OnKeyPressed = Key; }
+        private int selY = -1;
+        private int list = -1;
         internal override int Start()
         {
             Background(GUI.DarkGrayPen.ValueARGB);
@@ -202,28 +227,67 @@ namespace NclearOS2.GUI
         internal override void Update()
         {
             Background(GUI.DarkGrayPen.ValueARGB);
-            int i = 0;
+            DrawFilledRectangle(GUI.SystemPen.ValueARGB, x - 100, y - 50, 90, 20);
+            DrawStringAlpha("End task", Color.Gray.ToArgb(), x - 90, y - 45);
+            DrawHorizontalLine(Color.White.ToArgb(), 5, 10, x - 10);
+            DrawString(" Task ", Color.White.ToArgb(), GUI.DarkGrayPen.ValueARGB, 0, 5); DrawString(" RAM ", Color.White.ToArgb(), GUI.DarkGrayPen.ValueARGB, x - 160, 5); DrawString(" Priority ", Color.White.ToArgb(), GUI.DarkGrayPen.ValueARGB, x - 80, 5);
+            byte i = 0;
+            if (selY != -1)
+            {
+                if(ProcessManager.running.Count < list) { selY--; list--; }
+                else if (ProcessManager.running.Count > list) { selY++; list++; }
+            }
             foreach(var task in ProcessManager.running)
             {
                 i++;
-                string pr = task.priority switch
-                {
-                    Priority.High => "High",
-                    Priority.Low => "Low",
-                    Priority.Realtime => "Realtime",
-                    Priority.None => "None",
-                    _ => "Unknown",
-                };
 
-                if (i < 19) { DrawString(task.name, Color.White.ToArgb(), GUI.DarkGrayPen.ValueARGB, 10, i * 20); DrawString(task.usageRAM + " B", Color.White.ToArgb(), GUI.DarkGrayPen.ValueARGB, x - 150, i * 20); DrawString(pr, Color.White.ToArgb(), GUI.DarkGrayPen.ValueARGB, x - 100, i * 20); }
+                if(selY == i - 1)
+                {
+                    DrawFilledRectangle(Color.Gray.ToArgb(), 10, selY * 20 + 29, this.x - 20, Font.fontY + 2);
+                    DrawStringAlpha("End task", Color.White.ToArgb(), x - 90, y - 45);
+                }
+                if (i < 17) { Print(task, i); }
             }
             int ram = (int)(NclearOS2.Sysinfo.UsedRAM / NclearOS2.Sysinfo.InstalledRAM * 100);
             DrawFilledRectangle(Color.DarkGray.ToArgb(), 0, y - 20, x, 20);
             if (ram > 100) { ram = 100; }
             DrawFilledRectangle(GUI.SystemPen.ValueARGB, 0, y - 20, ram*(x/100), 20);
             DrawStringAlpha("RAM: " + ram + "%", Color.White.ToArgb(), 10, y - 15);
-            
         }
         internal override int Stop() { return 0; }
+        private void Print(Process task, int i)
+        {
+            DrawStringAlpha(task.name, Color.White.ToArgb(), 10, i * 20 + 10); DrawStringAlpha(task.usageRAM + " KB", Color.White.ToArgb(), x - 150, i * 20 + 10); DrawStringAlpha(ProcessManager.GetPriority(task.id), Color.White.ToArgb(), x - 70, i * 20 + 10);
+        }
+        private void Clicked(int x, int y)
+        {
+            if (y > 30 && y < ProcessManager.running.Count * 20 + 29 && y < this.y - 60)
+            {
+                if (selY == (y - 30) / 20)
+                {
+                    if (ProcessManager.running[selY] is Window) { WindowManager.FocusAtWindow(selY); }
+                }
+                else if (selY != -1)
+                {
+                    DrawFilledRectangle(GUI.DarkGrayPen.ValueARGB, 10, selY * 20 + 29, this.x - 20, Font.fontY + 2);
+                    Print(ProcessManager.running[selY], selY + 1);
+                }
+                selY = (y - 30) / 20;
+                list = ProcessManager.running.Count;
+                DrawFilledRectangle(Color.Gray.ToArgb(), 10, selY * 20 + 29, this.x - 20, Font.fontY + 2);
+                Print(ProcessManager.running[selY], selY + 1);
+                DrawStringAlpha("End task", Color.White.ToArgb(), this.x - 90,  this.y - 45);
+            }
+            else if (selY != -1)
+            {
+                if (x > this.x - 100 && x < this.x - 10 && y > this.y - 50 && y < this.y - 30) { ProcessManager.RemoveAt(selY); selY = -1; return; }
+                DrawFilledRectangle(GUI.DarkGrayPen.ValueARGB, 10, selY * 20 + 29, this.x - 20, Font.fontY + 2);
+                Print(ProcessManager.running[selY], selY + 1); selY = -1;
+            }
+        }
+        private void Key(KeyEvent key)
+        {
+            if(selY != -1 && key.Key == ConsoleKeyEx.Delete) { ProcessManager.RemoveAt(selY); selY = -1; }
+        }
     }
 }

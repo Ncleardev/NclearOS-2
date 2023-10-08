@@ -2,7 +2,7 @@ namespace NclearOS2.GUI
 {
     internal class PerformanceWatchdog : Process
     {
-        public PerformanceWatchdog() : base("Performance Monitor", Priority.Low, true) { }
+        public PerformanceWatchdog() : base("Performance Monitor", Priority.Low) { }
         private static bool acknowledged1;
         private static bool acknowledged2;
         private static bool acknowledged3;
@@ -23,7 +23,7 @@ namespace NclearOS2.GUI
                 {
                     if (!acknowledged2)
                     {
-                        Msg.Main("Warning", "Over 90% of system memory is being used and the system may crash unexpectedly. Save all work in progress, close applications and restart the system.", Icons.warn); acknowledged2 = true;
+                        Msg.Main("Warning", "Over 90% of system memory is being used and the system may crash unexpectedly. Save all work in progress and restart the system.", Icons.warn); acknowledged2 = true;
                     }
                     if ((int)(NclearOS2.Sysinfo.UsedRAM / NclearOS2.Sysinfo.InstalledRAM * 100) > 94)
                     {

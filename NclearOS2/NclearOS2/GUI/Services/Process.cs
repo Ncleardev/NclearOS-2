@@ -7,7 +7,7 @@ namespace NclearOS2.GUI
 {
     internal abstract class Process
     {
-        internal Process(string name, Priority priority, bool system = false)
+        internal Process(string name, Priority priority)
         {
             this.name = name;
             this.priority = priority;

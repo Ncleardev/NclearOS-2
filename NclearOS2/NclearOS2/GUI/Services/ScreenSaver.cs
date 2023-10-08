@@ -17,7 +17,7 @@ namespace NclearOS2.GUI
             if (!i)
             {
                 GUI.Lock = true;
-                GUI.HideCursor = true;
+                GUI.DisplayCursor = false;
                 GUI.canvas.Clear();
                 i = true;
             }
@@ -25,7 +25,7 @@ namespace NclearOS2.GUI
             {
                 i = false;
                 GUI.screenSaver = false;
-                GUI.HideCursor = false;
+                GUI.DisplayCursor = true;
             }
             x += step;
             y++;
@@ -33,7 +33,7 @@ namespace NclearOS2.GUI
             GUI.canvas.DrawPoint(GUI.SystemPen, x, y);
             GUI.canvas.DrawPoint(GUI.SystemPen, x-1, y-1);
             GUI.canvas.DrawPoint(GUI.SystemPen, x+1, y+1);
-            if (x > GUI.screenX) { x = 0; y = 0;}
+            if (x > GUI.screenX-5) { x = 0; y = 0;}
             GUI.canvas.DrawFilledRectangle(GUI.DarkPen, (int)GUI.screenX - 200, (int)GUI.screenY - 36, 200, 36);
             Font.DrawString(NclearOS2.Date.CurrentTime(true),System.Drawing.Color.White, (int)GUI.screenX - 200, (int)GUI.screenY - 36);
             Font.DrawString(NclearOS2.Date.CurrentDate(true, false), System.Drawing.Color.White, (int)GUI.screenX - 200, (int)GUI.screenY - 20);
@@ -41,7 +41,7 @@ namespace NclearOS2.GUI
     }
     internal class ScreenSaverService : Process
     {
-        public ScreenSaverService() : base("Screensaver Service", Priority.Low, true) { }
+        public ScreenSaverService() : base("Screensaver Service", Priority.Low) { }
         private int counter;
         private uint oldXMouse;
         private uint oldYMouse;

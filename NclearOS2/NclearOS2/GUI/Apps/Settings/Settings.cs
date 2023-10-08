@@ -15,7 +15,6 @@ namespace NclearOS2.GUI
 
         public static int wallpapernum = 0;
         public static bool cursorWhite = false;
-        public static int wallpaperheight = 0;
 
         public Settings() : base("Settings", 300, 300, new Bitmap(Resources.Settings), Priority.Realtime) { OnMoved = Moved; OnStartMoving = StartMoving; OnBackgroundChange = BgChange; }
         internal override void Update()
@@ -72,11 +71,13 @@ namespace NclearOS2.GUI
                     {
                         Icons.cursor = cursor1;
                         Icons.cursorload = cursor1L;
+                        cursorWhite = false;
                     }
                     else if (MouseManager.X > StartX + 50 && MouseManager.X < StartX + 70)
                     {
                         Icons.cursor = cursor2;
                         Icons.cursorload = cursor2L;
+                        cursorWhite = true;
                     }
                 }
             }

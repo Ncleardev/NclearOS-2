@@ -1,3 +1,4 @@
+using Cosmos.Core;
 using Cosmos.System;
 
 namespace NclearOS2.GUI
@@ -5,7 +6,7 @@ namespace NclearOS2.GUI
     internal class GlobalInput : Process
     {
         public static KeyEvent keyEvent;
-        public GlobalInput() : base("Input Manager", Priority.Realtime, true) { }
+        public GlobalInput() : base("Input Manager", Priority.Realtime) { }
         internal override int Start() { return 0; }
         internal override void Update()
         {
@@ -37,12 +38,16 @@ namespace NclearOS2.GUI
                         else { SendKey(keyEvent); }
                         return;
                     case ConsoleKeyEx.Escape:
+                        if(KeyboardManager.ControlPressed) { Menu.Opened = !Menu.Opened; return; }
                         if (Menu.Opened) { Menu.Opened = false; }
                         else { SendKey(keyEvent); }
                         return;
                     case ConsoleKeyEx.Delete:
                         if (KeyboardManager.ControlPressed && KeyboardManager.AltPressed) { Cosmos.System.Power.Reboot(); }
                         else { SendKey(keyEvent); }
+                        return;
+                    case ConsoleKeyEx.Tab:
+                        if (KeyboardManager.AltPressed) { WindowManager.FocusAtWindow(1); }
                         return;
                     default:
                         SendKey(keyEvent);

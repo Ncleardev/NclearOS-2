@@ -66,7 +66,7 @@ namespace NclearOS2.GUI
     internal class MsgWindow : Window
     {
         private string param;
-        public MsgWindow(string title, string text, Bitmap icon) : base(title, text.Length*GUI.font.Width + 10, 70, icon, Priority.None)
+        public MsgWindow(string title, string text, Bitmap icon) : base(title, text.Length*GUI.font.Width + 10, 71, icon, Priority.None)
         {
             param = text;
         }

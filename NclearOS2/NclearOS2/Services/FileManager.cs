@@ -25,8 +25,8 @@ namespace NclearOS2
             catch (Exception e)
             {
                 Kernel.useDisks = false;
-                if (showMsg) { Msg.Main("File System Error", e.ToString(), GUI.Icons.error); }
-                return e.ToString();
+                if (showMsg) { Msg.Main("File System Error", e.Message, GUI.Icons.error); }
+                return e.Message;
             }
         }
         public static string Open(string path, bool silent = false)
@@ -59,9 +59,12 @@ namespace NclearOS2
         }
         public static void Save(string path, string toSave, bool silent = false)
         {
-            GUI.GUI.Loading = true;
-            Toast.msg = "Saving " + path + "...";
-            GUI.GUI.Refresh();
+            if (!silent)
+            {
+                GUI.GUI.Loading = true;
+                Toast.msg = "Saving " + path + "...";
+                GUI.GUI.Refresh();
+            }
             try
             {
                 if (!VFSManager.FileExists(path))
@@ -76,7 +79,10 @@ namespace NclearOS2
                 {
                     byte[] textToWrite = Encoding.ASCII.GetBytes(toSave);
                     helloFileStream.Write(textToWrite, 0, textToWrite.Length);
-                    Toast.msg = "Saved " + path;
+                    if (!silent)
+                    {
+                        Toast.msg = "Saved " + path;
+                    }
                 }
                 else
                 {

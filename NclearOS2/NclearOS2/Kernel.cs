@@ -1,4 +1,5 @@
 ﻿using Cosmos.Core;
+using Cosmos.System.Graphics;
 using System;
 using System.Threading;
 using Display = NclearOS2.GUI.GUI;
@@ -8,12 +9,12 @@ namespace NclearOS2
 {
     public class Kernel : Sys.Kernel
     {
-        public static readonly string OSVERSION = "NclearOS 2 Version Alpha 0.5";
+        public static readonly string OSVERSION = "NclearOS 2 Version Alpha 0.5.1";
         public static readonly string OSNAME = "NclearOS 2";
         public static string PCNAME = "pc";
         public static readonly string MAINDISK = "0:\\";
         public static readonly string SYSTEMPATH = MAINDISK + "NclearOS\\";
-        public static readonly string USERSPATH = MAINDISK + "Users\\";
+        public static readonly string USERSPATH = SYSTEMPATH + "Users\\";
 
         public static readonly string PROGRAMSPATH = SYSTEMPATH + "Programs\\";
         public static readonly string PROGRAMSDATAPATH = SYSTEMPATH + "Config\\";
@@ -28,6 +29,7 @@ namespace NclearOS2
         public static bool useDisks = true;
         public static bool useNetwork = false;
         public static bool safeMode = false;
+
         protected override void BeforeRun()
         {
             try
@@ -40,24 +42,28 @@ namespace NclearOS2
                 Console.WriteLine("NclearOS");
                 Console.CursorLeft = 0;
                 Console.CursorTop = Console.WindowHeight - 1;
-                Boot.Run();
+                TextMode.Run();
             }
             catch (Exception e)
             {
-                SystemCrash(e.ToString());
+                SystemCrash(e.Message);
             }
 
         }
         protected override void Run()
         {
             try
-            { if (GUIenabled) { Display.Refresh(); } }
+            {
+                if (GUIenabled) { Display.Refresh(); }
+                else { TextMode.ConsoleMode(); }
+            }
             catch (Exception e)
             {
                 try
                 {
-                    Display.Refresh();
-                    if (Kernel.GUIenabled) { Msg.Main("Error", "System " + e, GUI.Icons.error); } else { Console.WriteLine("System " + e, GUI.Icons.error); }
+                    if (GUIenabled)
+                    { Display.Refresh(); Msg.Main("Error", "System " + e, GUI.Icons.error); }
+                    else { Console.WriteLine("System " + e, GUI.Icons.error); }
                 }
                 catch (Exception ex)
                 {
@@ -75,13 +81,17 @@ namespace NclearOS2
             Console.ForegroundColor = ConsoleColor.DarkBlue;
             Console.CursorTop = Console.WindowHeight / 3;
             Console.CursorLeft = (Console.WindowWidth - OSVERSION.Length - 4) / 2;
-            Console.WriteLine("  " + OSVERSION + "  ");
+            Console.Write("  " + OSVERSION + "  ");
+            Thread.Sleep(500);
             Console.BackgroundColor = ConsoleColor.DarkBlue;
             Console.ForegroundColor = ConsoleColor.White;
             Console.WriteLine();
             Console.WriteLine();
+            Console.WriteLine();
             Console.CursorLeft = (Console.WindowWidth - ("Fatal System " + e).Length) / 2;
-            Console.WriteLine("Fatal System " + e);
+            Console.Write("Fatal System " + e);
+            Thread.Sleep(500);
+            Console.WriteLine();
             Console.WriteLine();
             Console.CursorLeft = (Console.WindowWidth - "Press any key to restart computer ".Length) / 2;
             Console.Write("Press any key to restart computer ");
@@ -98,7 +108,7 @@ namespace NclearOS2
             Console.SetCursorPosition(18, Console.WindowHeight / 2 - 1);
             if (force)
             {
-                if (restart) { Sys.Power.Reboot(); } else { Sys.Power.Shutdown(); Console.Write("It is now safe to turn off computer."); }
+                if (restart) { Sys.Power.Reboot(); } else { Sys.Power.Shutdown(); }
             }
             else
             {
@@ -123,9 +133,9 @@ namespace NclearOS2
                     if (GUIenabled) { Display.canvas.Disable(); }
                     Thread.Sleep(100);
                     Sys.Power.Shutdown();
-                    Console.Write("It is now safe to turn off computer.");
                 }
             }
+            Console.Write("It is now safe to turn off computer.");
             while (true)
             {
                 Thread.Sleep(100);

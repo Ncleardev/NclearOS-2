@@ -13,13 +13,13 @@
         <StartCosmosGDB>False</StartCosmosGDB>
         <VisualStudioDebugPort>Pipe: Cosmos\Serial</VisualStudioDebugPort>
         <CosmosDebugPort>Serial: COM1</CosmosDebugPort>
-        <Launch>VMware</Launch>
+        <Launch>ISO</Launch>
         <Profile>VMware</Profile>
         <Description>Use VMware Player or Workstation to deploy and debug.</Description>
         <PxeInterface>192.168.0.8</PxeInterface>
         <RemoveBootDebugOutput>True</RemoveBootDebugOutput>
         <DebugEnabled>False</DebugEnabled>
-        <VMWareEdition>Player</VMWareEdition>
+        <VMWareEdition>Workstation</VMWareEdition>
         <CompressionType>Gzip</CompressionType>
     </PropertyGroup>
 
@@ -28,6 +28,7 @@
       <None Remove="GUI\Apps\Files\disk.bmp" />
       <None Remove="GUI\Apps\Files\file.bmp" />
       <None Remove="GUI\Apps\Files\files.bmp" />
+      <None Remove="GUI\Apps\Files\refresh.bmp" />
       <None Remove="GUI\Apps\Notepad\notepad.bmp" />
       <None Remove="GUI\Apps\Settings\settings.bmp" />
       <None Remove="GUI\Apps\SysInfo\sysinfo.bmp" />
@@ -70,6 +71,7 @@
       <EmbeddedResource Include="GUI\Apps\Files\disk.bmp" />
       <EmbeddedResource Include="GUI\Apps\Files\file.bmp" />
       <EmbeddedResource Include="GUI\Apps\Files\files.bmp" />
+      <EmbeddedResource Include="GUI\Apps\Files\refresh.bmp" />
       <EmbeddedResource Include="GUI\Apps\Notepad\notepad.bmp" />
       <EmbeddedResource Include="GUI\Apps\Settings\settings.bmp" />
       <EmbeddedResource Include="GUI\Apps\SysInfo\sysinfo.bmp" />

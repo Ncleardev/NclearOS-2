@@ -1,3 +1,4 @@
+using NclearOS2.GUI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -117,10 +118,10 @@ namespace NclearOS2.Commands
             }
             return -1;
         }
-        public void CrashShell()
+        /*public void CrashShell()
         {
             throw new Exception("Manual crash");
-        }
+        }*/
     }
     internal class Example : CommandsTree
     {
@@ -218,7 +219,9 @@ namespace NclearOS2.Commands
                     shell.print = result;
                     return 0;
                 case "shortcuts":
-                    shell.print = "F1 - display help\nF5 - refresh list in Files app\nF11 - open Console App\nF12 - open Process Manager\nAlt + F4 - close window\nWinKey - open/close Menu\nCtrl + Alt + Delete - restart PC\nESC - cancel input\nArrows Up/Down - browse command history";
+                    shell.print = Kernel.GUIenabled ?
+                    "GUI Mode shortcuts:\nF11 - open Console App\nF12 - open Process Manager\nAlt + F4 - close window\nWinKey / Ctrl + Esc - open/close Menu\nCtrl + Alt + Delete - restart PC\nAlt + Tab - switch between windows\nConsole App:\nArrows Up/Down - browse command history\nESC - cancel input\nFiles App:\nF5 - refresh list\nDel - delete selected directory/file\nAlt + LeftArrow - go Back\nAlt + UpArrow - go to parent directory"
+                    : "Text Mode shortcuts:\nF1 - display help\nCtrl + Alt + Delete - restart PC\nESC - cancel input\nArrows Up/Down - browse command history";
                     return 0;
                 case "list":
                     string modules = "";
@@ -272,6 +275,7 @@ namespace NclearOS2.Commands
                     {
                         shell.prompt = args[1];
                     }
+                    shell.print = null;
                     shell.update.Invoke();
                     return 0;
                 case "setres":
@@ -286,16 +290,20 @@ namespace NclearOS2.Commands
                     }
                     else
                     {
-                        shell.print = GUI.GUI.SetRes(GUI.GUI.ResParse(args[1]));
+                        if (Kernel.GUIenabled) { shell.print = GUI.GUI.SetRes(GUI.GUI.ResParse(args[1])); }
+                        else { shell.print = GUI.GUI.Init(args[1]); }
                     }
                     return 0;
                 case "exit":
                     if (Kernel.GUIenabled)
                     {
+                        GUI.GUI.ShutdownGUI();
                         GUI.GUI.canvas.Disable();
-                        TextMode.ConsoleMode();
                     }
-                    else { shell.print = GUI.GUI.SetRes(GUI.GUI.displayMode); }
+                    else
+                    {
+                        shell.print = GUI.GUI.Init();
+                    }
                     return 0;
             }
             return 1;
@@ -318,7 +326,7 @@ namespace NclearOS2.Commands
                 case "sd":
                 case "shutdown":
                     shell.print = "Shutting down...";
-                    foreach (string arg in args.Skip(1))
+                    if (args.Length > 1)
                     {
                         if (args[1] == "/f")
                         {
@@ -338,7 +346,7 @@ namespace NclearOS2.Commands
                 case "reboot":
                 case "restart":
                     shell.print = "Restarting...";
-                    foreach (string arg in args.Skip(1))
+                    if(args.Length > 1)
                     {
                         if (args[1] == "/f")
                         {
@@ -364,7 +372,7 @@ namespace NclearOS2.Commands
             ("Debug", "Provides debugging options",
             new Command[] {
             new Command(new string[] { "debug"}, "Switches beetween debug states."),
-            new Command(new string[] { "err"}, "Crash specific level of system.", new string[] { "/c - Crash Command execution", "/s - Crash Command Shell", "/sc - Crash Command Shell client", "/k - Check Kernel error handling", "/xk - Exploit Kernel error handling"})
+            new Command(new string[] { "err"}, "Crash specific level of system.", new string[] { "/c - Crash Command execution", "/s - Crash Command Shell client", "/k - Check Kernel error handling", "/xk - Exploit Kernel error handling"})
             })
         {
         }
@@ -391,10 +399,10 @@ namespace NclearOS2.Commands
                         {
                             case "/c":
                                 throw new Exception("Manual crash");
-                            case "/s":
+                            /*case "/s":
                                 shell.CrashShell();
-                                return 0;
-                            case "/sc":
+                                return 0;*/
+                            case "/s":
                                 shell.crashClient.Invoke();
                                 shell.print = "If you are seeing this, Console Shell client does not include debugging functions.";
                                 return 0;

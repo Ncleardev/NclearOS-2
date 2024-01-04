@@ -8,7 +8,7 @@
 [![](https://img.shields.io/github/stars/Ncleardev/NclearOS-2.svg)](https://github.com/Ncleardev/NclearOS-2/stargazers)
 [![](https://img.shields.io/github/issues/Ncleardev/NclearOS-2.svg)](https://github.com/Ncleardev/NclearOS-2/issues)
 [![](https://img.shields.io/github/issues-closed/Ncleardev/NclearOS-2.svg)](https://github.com/Ncleardev/NclearOS-2/issues?q=is%3Aissue+is%3Aclosed)
-<!--- [![](https://tokei.rs/b1/github/Ncleardev/NclearOS-2?category=code.svg)](https://github.com/Ncleardev/NclearOS-2/tree/main/NclearOS2) -->
+[![](https://tokei.rs/b1/github/Ncleardev/NclearOS-2?category=code.svg)](https://github.com/Ncleardev/NclearOS-2/tree/main/NclearOS2)
 [![](https://img.shields.io/github/languages/code-size/Ncleardev/NclearOS-2.svg)](https://github.com/Ncleardev/NclearOS-2/tree/main/NclearOS2)
 [![](https://img.badgesize.io/https://github.com/Ncleardev/NclearOS-2/releases/download/v0.5.0/NclearOS2.iso.svg?label=ISO_size)](https://github.com/Ncleardev/NclearOS-2/releases/tag/v0.5.0)
 

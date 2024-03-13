@@ -18,7 +18,7 @@ namespace NclearOS2.GUI
 {
     internal class Files : Window
     {
-        public Files(int x, int y) : base("Files", x, y, new Bitmap(Resources.Files), Priority.None) { OnKeyPressed = Key; OnClicked = OnPressed; }
+        public Files(int x, int y) : base("Files", x, y, new Bitmap(Resources.Files), ProcessManager.Priority.None) { OnKeyPressed = Key; OnClicked = OnPressed; }
         public string cd = "Computer";
         private int selY = -1;
         public string CD
@@ -62,8 +62,8 @@ namespace NclearOS2.GUI
             CD = "Computer";
             return 0;
         }
-        internal override void Update() { }
-        internal override int Stop() { return 0; }
+
+
         private void Key(KeyEvent key)
         {
             switch (key.Key)
@@ -134,9 +134,9 @@ namespace NclearOS2.GUI
         }
         private void OnPressed(int x, int y)
         {
-            if(y > 50 && y < listresult.Count * 20 + 50 && y < this.y - 60)
+            if (y > 50 && y < listresult.Count * 20 + 50 && y < this.y - 60)
             {
-                if(selY == (y - 50) / 20)
+                if (selY == (y - 50) / 20)
                 {
                     if (listresult[selY][0] == "DIR")
                     {
@@ -153,9 +153,19 @@ namespace NclearOS2.GUI
                         }
                         else
                         {
-                            if (CD.EndsWith('\\')) { ProcessManager.Run(new Notepad((int)(GUI.screenX - 250), (int)(GUI.screenY - 170), CD + listresult[selY][1])); }
-                            else { ProcessManager.Run(new Notepad((int)(GUI.screenX - 250), (int)(GUI.screenY - 170), CD + "\\" + listresult[selY][1])); }
-                            
+                            string pathToOpen = Path.Combine(CD, listresult[selY][1]);
+                            switch (listresult[selY][0])
+                            {
+                                case "BMP":
+                                    byte[] data = F.OpenInBytes(pathToOpen);
+                                    //Toast.Debug("Success; " + data.Length);
+                                    Images.RequestSystemWallpaperChange(new Bitmap(data));
+                                    GUI.ApplyRes();
+                                    break;
+                                default:
+                                    ProcessManager.Run(new Notepad((int)(GUI.ScreenX - 250), (int)(GUI.ScreenY - 170), pathToOpen));
+                                    break;
+                            }
                             DrawFilledRectangle(GUI.DarkGrayPen.ValueARGB, 10, selY * 20 + 49, this.x - 20, Font.fontY + 2);
                             Print(selY, GUI.DarkGrayPen.ValueARGB);
                             selY = -1;
@@ -163,7 +173,7 @@ namespace NclearOS2.GUI
                         }
                     }
                 }
-                else if(selY != -1)
+                else if (selY != -1)
                 {
                     DrawFilledRectangle(GUI.DarkGrayPen.ValueARGB, 10, selY * 20 + 49, this.x - 20, Font.fontY + 2);
                     Print(selY, GUI.DarkGrayPen.ValueARGB);
@@ -171,7 +181,7 @@ namespace NclearOS2.GUI
                 selY = (y - 50) / 20;
                 DrawFilledRectangle(Color.Gray.ToArgb(), 10, selY * 20 + 49, this.x - 20, Font.fontY + 2);
                 Print(selY, Color.Gray.ToArgb());
-                if(CD == "Computer")
+                if (CD == "Computer")
                 {
                     DrawString("Format", Color.White.ToArgb(), GUI.DarkGrayPen.ValueARGB, 10, 5);
                 }

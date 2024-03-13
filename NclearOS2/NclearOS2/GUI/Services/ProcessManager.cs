@@ -8,8 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
-using System.Threading.Tasks;
-using static NclearOS2.GUI.Process;
+using System.Threading;
 
 namespace NclearOS2.GUI
 {
@@ -18,8 +17,17 @@ namespace NclearOS2.GUI
         internal static List<Process> running = new();
         static short second = -1;
         static char second10;
+        private static Window hoveredOn;
+        internal enum Priority //how often Update() method of Process is called
+        {
+            None,
+            Low, //every 10s
+            High, //every second
+            Realtime //every Kernel refresh
+        }
         public static void Refresh()
         {
+            hoveredOn = null;
             bool lowpriority = false;
             bool highpriority = false;
             if (RTC.Second != second)
@@ -32,21 +40,33 @@ namespace NclearOS2.GUI
                 lowpriority = true;
                 second10 = NclearOS2.Date.CurrentSecond()[0];
             }
-            for (int i = running.Count; i > 0; i--)
+            for (int i = running.Count - 1; i >= 0; i--)
             {
-                uint j = GCImplementation.GetUsedRAM();
+                uint before = GCImplementation.GetUsedRAM();
 
-                running[i - 1].id = i - 1;
-
-                if (running[i - 1] is Window w)
+                switch (running[i].priority)
                 {
-                    if (!w.minimized) { WindowManager.Draw(w); }
+                    case Priority.Realtime:
+                        Update(i);
+                        break;
+                    case Priority.High when highpriority:
+                        Update(i);
+                        break;
+                    case Priority.Low when lowpriority:
+                        Update(i);
+                        break;
                 }
-                if (running[i - 1].priority == Process.Priority.Realtime) { Update(i - 1); }
-                if (highpriority && running[i - 1].priority == Process.Priority.High) { Update(i - 1); }
-                if (lowpriority && running[i - 1].priority == Process.Priority.Low) { Update(i - 1); }
 
-                running[i - 1].usageRAM += (GCImplementation.GetUsedRAM() - j) / 1024;
+                if (running[i] is Window w && !w.minimized)
+                {
+                    WindowManager.Draw(w);
+                    if (MouseManager.X >= w.StartX && MouseManager.X <= w.StartX + w.x && MouseManager.Y >= w.StartY && MouseManager.Y <= w.StartY + w.y + 30)
+                    {
+                        if (w.windowlock) { hoveredOn = null; } else { hoveredOn = w; }
+                    }
+                }
+
+                running[i].usageRAM += GCImplementation.GetUsedRAM() - before;
             }
         }
         public static void Update(int id)
@@ -56,75 +76,86 @@ namespace NclearOS2.GUI
         }
         internal static Process Run(Process process)
         {
+            if (!Kernel.GUIenabled) { throw new Exception("GUI mode not enabled!"); }
             GUI.Loading = true;
             GUI.Refresh();
             uint j = GCImplementation.GetUsedRAM();
-            process.id = 0;
+
+            int id = process is Window ? 0 : running.Count;
+
             int code = process.Start();
             if (code == -1) { GUI.Loading = false; return null; }
             else if (code != 0) { Msg.Main("Process Manager", "Process '" + process.name + " launched and then stopped with an unexpected error code: " + code, Icons.warn); GUI.Loading = false; return null; }
+
             process.usageRAM = (GCImplementation.GetUsedRAM() - j) / 1024;
             GUI.Refresh();
-            running.Insert(0, process);
-            running[0].id = 0;
+            j = GCImplementation.GetUsedRAM();
+
+            running.Insert(id, process);
+            WindowManager.FocusAtWindow(0);
+
             GUI.Loading = false;
+            process.usageRAM += (GCImplementation.GetUsedRAM() - j) / 1024;
             return process;
         }
-        public static int RemoveAt(int i, bool force = false)
+        internal static int RemoveAt(int i, bool force = false)
         {
             GUI.Loading = true;
-            int exitCode = running[i].Stop();
-            //GCImplementation.Free(running[i]);
-            if (force || exitCode == 0) { running.RemoveAt(i); }
-            else if (exitCode != -1)
+            if (force) { running.RemoveAt(i); GUI.Refresh(); GUI.Loading = false; return 0; }
+            int exitCode = running[i].Stop(force);
+            if (exitCode == 0) { if (running[i] is Window w) { Animation.Running.Add(new((short)w.StartX, (short)(w.StartY), w.borderCanvas, 50)); } running.RemoveAt(i); } //Animation.Running.Add(new(w.appCanvas, PostProcess.CropBitmap(Images.wallpaperBlur, w.StartX, w.StartY + 30, w.x, w.y), (short)w.StartX, (short)(w.StartY+30), 50));
+            else if (exitCode != 1)
             {
+                //if (exitCode == -1) { if (Run(running[i]) != null) { NotificationSystem.Notify("Process Manager", "System Process '" + running[i + 1] + "' crashed and successfully recovered."); running.RemoveAt(i + 1); } else { NotificationSystem.Notify("Process Manager", "System Process '" + running[i + 1] + "' crashed and unsuccessfully recovered. Reboot recommended."); } running.RemoveAt(i + 1); }
+                //else
+                //{
                 string name = running[i].name;
                 running.RemoveAt(i);
                 Msg.Main("Process Manager", "Process '" + name + " stopped with an unexpected error code: " + exitCode, Icons.warn);
+                //}
             }
+            if (running[0] is Window w2) { Font.DrawString(w2.name, Color.White.ToArgb(), 36, 10, w2.borderCanvas.rawData, w2.x); }
             GUI.Loading = false;
             return exitCode;
         }
-        public static string StopAll()
+        public static string StopAll(bool force = false)
         {
-            foreach(Process process in running) { process.Stop(); }
-            running.Clear();
-            return null;
+            if (!Kernel.GUIenabled || running == null || running.Count == 0) { return null; }
+            string apps = null;
+            bool animations = GUI.animationEffects;
+            GUI.animationEffects = false;
             GUI.Loading = true;
-            GUI.Refresh();
-            string result = null;
-            int j = running.Count;
-            for (int i = 0; i < j; i++)
+            Process[] processList = running.ToArray();
+            foreach (Process process in processList)
             {
-                if (RemoveAt(i) == -1)
-                {
-                    if (result == null)
-                    {
-                        result = running[i].name;
-                    }
-                    else { result += "; " + running[i].name; }
-                }
+                GUI.Refresh();
+                string name = process.name;
+                try { if (process.Exit(force) == 1) apps += "\n" + name; } catch { }
+                GUI.Refresh();
             }
             GUI.Loading = false;
-            return result;
+            GUI.animationEffects = animations;
+            return apps;
         }
-        public static void Click(int x, int y)
+        public static bool Click(int x, int y)
         {
-            for (int i = 0; i < running.Count; i++)
+            if (hoveredOn != null) { hoveredOn.Click(x, y); return true; }
+            return false;
+        }
+
+        public static void LongPress(int x, int y)
+        {
+            hoveredOn?.LongPress(x, y);
+        }
+        public static void Hover(int x, int y)
+        {
+            hoveredOn?.Hover(x, y);
+        }
+        public static void Key(KeyEvent keyEvent)
+        {
+            if (running[0] is Window w)
             {
-                if (running[i] is Window w)
-                {
-                    if (w.windowlock) { return; }
-                    if (!w.minimized)
-                    {
-                        if (x > w.StartX && x < w.StartX + w.x && y > w.StartY + 30 && y < w.StartY + w.y + 30)
-                        {
-                            WindowManager.FocusAtWindow(i);
-                            try { w?.OnClicked?.Invoke(x - w.StartX, y - w.StartY - 30); } catch(Exception e) { Msg.Main("Error", "Process '" + w.name + "' encountered an error: " + e, Icons.error); }
-                            return;
-                        }
-                    }
-                }
+                w.OnKey(keyEvent);
             }
         }
         public static string GetPriority(int id)
@@ -141,6 +172,12 @@ namespace NclearOS2.GUI
     }
     public static class WindowManager
     {
+        internal enum Resizable
+        {
+            None,
+            Scale,
+            Full
+        }
         internal static void Draw(Window w)
         {
             if (w.windowlock)
@@ -150,73 +187,43 @@ namespace NclearOS2.GUI
                     w.StartX = w.StartXOld + (int)MouseManager.X;
                     w.StartY = w.StartYOld + (int)MouseManager.Y;
                     if (w.StartY < 0) { w.StartY = 0; }
-                    else if (w.StartY > GUI.screenY - 60) { w.StartY = (int)GUI.screenY - 60; }
+                    else if (w.StartY > GUI.ScreenY - 60) { w.StartY = (int)GUI.ScreenY - 60; }
                     if (w.StartX < 0) { w.StartX = 0; }
-                    else if (w.StartX + w.x > GUI.screenX) { w.StartX = (int)GUI.screenX - w.x; }
+                    else if (w.StartX + w.x > GUI.ScreenX) { w.StartX = (int)GUI.ScreenX - w.x; }
                 }
-                else
-                {
-                    w.windowlock = false;
-                    w.borderCanvas = PostProcess.CropBitmap(Images.wallpaperBlur, w.StartX, w.StartY, w.x, 30);
-                    Font.DrawString(w.name, Color.White.ToArgb(), 36, 10, w.borderCanvas.rawData, w.x);
-                    Font.DrawImageAlpha(w.icon, 5, 3, w.borderCanvas.rawData, w.x);
-                    Font.DrawImageAlpha(Icons.minimize, w.x - 50, 7, w.borderCanvas.rawData, w.x);
-                    Font.DrawImageAlpha(Icons.close, w.x - 20, 7, w.borderCanvas.rawData, w.x);
-                    w.OnMoved?.Invoke();
-                }
-                GUI.canvas.DrawImage(w.borderCanvas, w.StartX, w.StartY);
+                else { w.windowlock = false; w.RefreshBorder(); w.OnMoved?.Invoke(); }
             }
-            else
+            GUI.canvas.DrawImage(w.borderCanvas, w.StartX, w.StartY);
+
+            if (w.resizable == Resizable.Scale)
             {
-                GUI.canvas.DrawImage(w.borderCanvas, w.StartX, w.StartY);
-                if (MouseManager.Y > (w.StartY) && MouseManager.Y < w.StartY + 30)
-                {
-                    if (MouseManager.X > w.StartX - 23 + w.x && MouseManager.X < w.StartX + 1 + w.x)
-                    {
-                        GUI.canvas.DrawImageAlpha(Icons.close2, w.StartX - 20 + w.x, w.StartY + 7);
-                        if (GUI.Pressed) { ProcessManager.RemoveAt(w.id); return; }
-                    }
-                    else if (MouseManager.X > w.StartX - 53 + w.x && MouseManager.X < w.StartX - 23 + w.x)
-                    {
-                        GUI.canvas.DrawImageAlpha(Icons.minimize2, w.StartX - 50 + w.x, w.StartY + 7);
-                        if (GUI.Pressed) { w.minimized = true; }
-                    }
-                    else if (GUI.StartClick && MouseManager.X > w.StartX && MouseManager.X < w.StartX + w.x - 53)
-                    {
-                        w.StartXOld = w.StartX - (int)MouseManager.X;
-                        w.StartYOld = w.StartY - (int)MouseManager.Y;
-                        w.windowlock = true;
-                        MemoryOperations.Fill(w.borderCanvas.rawData, 0);
-                        Font.DrawString(w.name, Color.White.ToArgb(), 36, 10, w.borderCanvas.rawData, w.x);
-                        Font.DrawImageAlpha(w.icon, 5, 3, w.borderCanvas.rawData, w.x);
-                        Font.DrawImageAlpha(Icons.minimize, w.x - 50, 7, w.borderCanvas.rawData, w.x);
-                        Font.DrawImageAlpha(Icons.close, w.x - 20, 7, w.borderCanvas.rawData, w.x);
-                        FocusAtWindow(w.id);
-                        w.OnStartMoving?.Invoke();
-                    }
-                }
+                int[] canvas = w.appCanvas.rawData;
+                Bitmap res = new((uint)w.x, (uint)w.y, GUI.DisplayMode.ColorDepth)
+                { rawData = PostProcess.ResizeBitmap(canvas, w.appCanvas.Width, w.appCanvas.Height, (uint)w.x, (uint)w.y) };
+                //if (res == null || res.Width != w.x || res.Height != w.y) { }
+                GUI.canvas.DrawImage(res, w.StartX, w.StartY + 30);
             }
-            GUI.canvas.DrawImage(w.appCanvas, w.StartX, w.StartY + 30);
+            else { GUI.canvas.DrawImage(w.appCanvas, w.StartX, w.StartY + 30); }
         }
         public static void FocusAtWindow(int id)
         {
-            if (ProcessManager.running[id] is Window w)
+            if (ProcessManager.running[id] is Window w2)
             {
-                w.minimized = false;
-                MoveToTop(ProcessManager.running, id);
+                for (int i = ProcessManager.running.Count - 1; i > 0; i--)
+                {
+                    if (i <= id) { ProcessManager.running[i] = ProcessManager.running[i - 1]; }
+
+                    if (ProcessManager.running[i] is Window w) Font.DrawString(w.name, Color.Gray.ToArgb(), 36, 10, w.borderCanvas.rawData, w.x);
+                }
+                ProcessManager.running[0] = w2;
+                Font.DrawString(w2.name, Color.White.ToArgb(), 36, 10, w2.borderCanvas.rawData, w2.x);
+                w2.Unminimize();
             }
-        }
-        public static void MoveToTop<T>(this List<T> list, int index)
-        {
-            T item = list[index];
-            for (int i = index; i > 0; i--)
-                list[i] = list[i - 1];
-            list[0] = item;
         }
     }
     internal class TaskManager : Window
     {
-        internal TaskManager() : base("Process Manager", 400, 400, new Bitmap(Resources.TaskmngIcon), Priority.High) { OnClicked = Clicked; OnKeyPressed = Key; }
+        internal TaskManager() : base("Process Manager", 400, 400, new Bitmap(Resources.TaskmngIcon), ProcessManager.Priority.High) { OnClicked = Clicked; OnKeyPressed = Key; }
         private int selY = -1;
         private int list = -1;
         internal override int Start()
@@ -234,14 +241,14 @@ namespace NclearOS2.GUI
             byte i = 0;
             if (selY != -1)
             {
-                if(ProcessManager.running.Count < list) { selY--; list--; }
+                if (ProcessManager.running.Count < list) { selY--; list--; }
                 else if (ProcessManager.running.Count > list) { selY++; list++; }
             }
-            foreach(var task in ProcessManager.running)
+            foreach (var task in ProcessManager.running)
             {
                 i++;
 
-                if(selY == i - 1)
+                if (selY == i - 1)
                 {
                     DrawFilledRectangle(Color.Gray.ToArgb(), 10, selY * 20 + 29, this.x - 20, Font.fontY + 2);
                     DrawStringAlpha("End task", Color.White.ToArgb(), x - 90, y - 45);
@@ -251,14 +258,32 @@ namespace NclearOS2.GUI
             int ram = (int)(NclearOS2.Sysinfo.UsedRAM / NclearOS2.Sysinfo.InstalledRAM * 100);
             DrawFilledRectangle(Color.DarkGray.ToArgb(), 0, y - 20, x, 20);
             if (ram > 100) { ram = 100; }
-            DrawFilledRectangle(GUI.SystemPen.ValueARGB, 0, y - 20, ram*(x/100), 20);
+            DrawFilledRectangle(GUI.SystemPen.ValueARGB, 0, y - 20, ram * (x / 100), 20);
             DrawStringAlpha("RAM: " + ram + "%", Color.White.ToArgb(), 10, y - 15);
         }
-        internal override int Stop() { return 0; }
+
         private void Print(Process task, int i)
         {
-            DrawStringAlpha(task.name, Color.White.ToArgb(), 10, i * 20 + 10); DrawStringAlpha(task.usageRAM + " KB", Color.White.ToArgb(), x - 150, i * 20 + 10); DrawStringAlpha(ProcessManager.GetPriority(task.id), Color.White.ToArgb(), x - 70, i * 20 + 10);
+            DrawStringAlpha(task.name, Color.White.ToArgb(), 10, i * 20 + 10); DrawStringAlpha(FormatBytes(task.usageRAM), Color.White.ToArgb(), x - 150, i * 20 + 10); DrawStringAlpha(ProcessManager.GetPriority(task.ID), Color.White.ToArgb(), x - 70, i * 20 + 10);
         }
+        public static string FormatBytes(uint bytes)
+        {
+            if (bytes == 0) return "0 B";
+
+            string[] units = { "B", "KB", "MB", "GB" };
+            int i = 0;
+            float value = bytes;
+
+            while (value >= 1024 && i < units.Length - 1)
+            {
+                value /= 1024;
+                i++;
+            }
+
+            string formatString = value < 10 ? "0.0" : "0";
+            return $"{value.ToString(formatString)} {units[i]}";
+        }
+
         private void Clicked(int x, int y)
         {
             if (y > 30 && y < ProcessManager.running.Count * 20 + 29 && y < this.y - 60)
@@ -276,18 +301,18 @@ namespace NclearOS2.GUI
                 list = ProcessManager.running.Count;
                 DrawFilledRectangle(Color.Gray.ToArgb(), 10, selY * 20 + 29, this.x - 20, Font.fontY + 2);
                 Print(ProcessManager.running[selY], selY + 1);
-                DrawStringAlpha("End task", Color.White.ToArgb(), this.x - 90,  this.y - 45);
+                DrawStringAlpha("End task", Color.White.ToArgb(), this.x - 90, this.y - 45);
             }
             else if (selY != -1)
             {
-                if (x > this.x - 100 && x < this.x - 10 && y > this.y - 50 && y < this.y - 30) { ProcessManager.RemoveAt(selY); selY = -1; return; }
+                if (x > this.x - 100 && x < this.x - 10 && y > this.y - 50 && y < this.y - 30) { ProcessManager.RemoveAt(selY, true); selY = -1; return; }
                 DrawFilledRectangle(GUI.DarkGrayPen.ValueARGB, 10, selY * 20 + 29, this.x - 20, Font.fontY + 2);
                 Print(ProcessManager.running[selY], selY + 1); selY = -1;
             }
         }
         private void Key(KeyEvent key)
         {
-            if(selY != -1 && key.Key == ConsoleKeyEx.Delete) { ProcessManager.RemoveAt(selY); selY = -1; }
+            if (selY != -1 && key.Key == ConsoleKeyEx.Delete) { ProcessManager.RemoveAt(selY); selY = -1; }
         }
     }
 }

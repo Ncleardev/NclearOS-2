@@ -1,6 +1,7 @@
 using Cosmos.HAL.BlockDevice;
 using Cosmos.System.FileSystem;
 using Cosmos.System.FileSystem.VFS;
+using Cosmos.System.Graphics;
 using NclearOS2.GUI;
 using System;
 using System.Collections.Generic;
@@ -12,9 +13,11 @@ namespace NclearOS2
 {
     public static class FileManager
     {
-        public static CosmosVFS fs = new CosmosVFS();
+        public static CosmosVFS fs = new();
         public static List<string> diskList = new();
-        public static string Start(bool showMsg = true)
+        private static void Info(string msg, bool silent) { if (!silent) { GUI.GUI.Loading = true; Toast.Msg = msg; GUI.GUI.Refresh(); GUI.GUI.Loading = false; }  }
+        private static void Error(string msg) { Msg.Main("Error", msg, Icons.error); }
+        public static string Start()
         {
             try
             {
@@ -25,46 +28,15 @@ namespace NclearOS2
             catch (Exception e)
             {
                 Kernel.useDisks = false;
-                if (showMsg) { Msg.Main("File System Error", e.Message, GUI.Icons.error); }
+                Msg.Main("File System Error", e.Message, Icons.error);
                 return e.Message;
             }
         }
-        public static string Open(string path, bool silent = false)
+        public static string Open(string path) { return File.ReadAllText(path); }
+        public static byte[] OpenInBytes(string path) { return File.ReadAllBytes(path); }
+        public static string Save(string path, string toSave, bool silent = false)
         {
-            if (!silent) { GUI.GUI.Wait(); }
-            var hello_file = VFSManager.GetFile(path);
-            var hello_file_stream = hello_file.GetFileStream();
-
-            if (hello_file_stream.CanRead)
-            {
-                byte[] text_to_read = new byte[hello_file_stream.Length];
-                hello_file_stream.Read(text_to_read, 0, (int)hello_file_stream.Length);
-                return Encoding.Default.GetString(text_to_read);
-            }
-            return "File access denied";
-        }
-        public static byte[] OpenInBytes(string path, bool silent = false)
-        {
-            if (!silent) { GUI.GUI.Wait(); }
-            var hello_file = VFSManager.GetFile(path);
-            var hello_file_stream = hello_file.GetFileStream();
-
-            if (hello_file_stream.CanRead)
-            {
-                byte[] text_to_read = new byte[hello_file_stream.Length];
-                hello_file_stream.Read(text_to_read, 0, (int)hello_file_stream.Length);
-                return text_to_read;
-            }
-            return null;
-        }
-        public static void Save(string path, string toSave, bool silent = false)
-        {
-            if (!silent)
-            {
-                GUI.GUI.Loading = true;
-                Toast.msg = "Saving " + path + "...";
-                GUI.GUI.Refresh();
-            }
+            Info("Saving " + path + "...", silent);
             try
             {
                 if (!VFSManager.FileExists(path))
@@ -79,14 +51,11 @@ namespace NclearOS2
                 {
                     byte[] textToWrite = Encoding.ASCII.GetBytes(toSave);
                     helloFileStream.Write(textToWrite, 0, textToWrite.Length);
-                    if (!silent)
-                    {
-                        Toast.msg = "Saved " + path;
-                    }
+                    Info("Saved " + path, silent);
                 }
                 else
                 {
-                    Msg.Main("Error", "Cannot write to " + path, Icons.error);
+                    Error("Cannot write to " + path);
                 }
             }
             catch (Exception e)
@@ -94,6 +63,7 @@ namespace NclearOS2
                 Msg.Main("Error", "Failed saving " + path + "; " + e, Icons.error);
             }
             GUI.GUI.Loading = false;
+            return path;
         }
         public static void SaveInBytes(string path, byte[] toSave, bool silent = false)
         {
@@ -114,22 +84,22 @@ namespace NclearOS2
                 }
                 else
                 {
-                    //Msg.Main("Error", "Cannot write to " + path, Resources.error);
+                    Msg.Main("Error", "Cannot write to " + path, Icons.error);
                 }
             }
             catch (Exception e)
             {
-                //Msg.Main("Error", "Failed saving " + path + "; " + e, Resources.error);
+                Msg.Main("Error", "Failed saving " + path + "; " + e, Icons.error);
             }
         }
-        public static void Format(int diskIndex, string format = "FAT32", bool quicky = true)
+        public static void Format(int diskIndex, string format = "FAT32", bool quick = true)
         {
-            Toast.msg = "Formatting " + diskIndex + ":\\ - file system " + format + "...";
+            Toast.Msg = "Formatting " + diskIndex + ":\\ - file system " + format + "...";
             GUI.GUI.Wait();
             try
             {
-                fs.Disks[diskIndex].FormatPartition(diskIndex, format, quicky);
-                Toast.msg = "Successfully formatted " + diskIndex + ":\\ - file system " + format + " - Restart PC to see changes";
+                fs.Disks[diskIndex].FormatPartition(diskIndex, format, quick);
+                NotificationSystem.Notify("File Manager", "Successfully formatted " + diskIndex + ":\\ - file system " + format + " - Restart PC to see changes", Icons.info);
                 Kernel.useDisks = false;
             }
             catch (Exception e)
@@ -210,9 +180,13 @@ namespace NclearOS2
             }
             GUI.GUI.Loading = false;
         }
-        public static void Rename(string path, string newName, bool silent = false)
+        public static void Rename(string path, string newName, bool folder, bool silent = false)
         {
-            //Toast.msg = "Not implemented yet";
+            string dir = Directory.GetParent(path).ToString();
+            string oldName = path.Replace(dir, null);
+            if (oldName == newName) { return; }
+            SaveInBytes(NewFile(dir + "\\" + newName, "", silent), OpenInBytes(path), silent);
+            Delete(path, folder, silent);
         }
         public static void CopyFile(string from, string target = "")
         {
@@ -253,40 +227,42 @@ namespace NclearOS2.Commands
 {
     internal class Files : CommandsTree
     {
-        public static byte seldisk = 0;
+        public static byte selDisk = 0;
         public static string path = "Computer";
-        public static string undopath = "Computer";
+        public static string undoPath = "Computer";
+        public static string ParentPath { get { return Convert.ToString(Directory.GetParent(path)); } }
         internal Files() : base
             ("Files", "Manages files on computer.",
             new Command[] {
-            new Command(new string[] { "init" }, "Initializes file system, if not initialized already."),
-            new Command(new string[] { "install" }),
-            new Command(new string[] { "dir", "ls" }),
-            new Command(new string[] { "cd", "cd\\", "cd.." }),
-            new Command(new string[] { "format" }),
-            new Command(new string[] { "diskinfo" }),
-            new Command(new string[] { "mkdir" }),
-            new Command(new string[] { "install" }),
-            new Command(new string[] { "cat" }, "", new string[] {"[filename]"})
+            new(new string[] { "init" }, "Initializes file system, if not initialized already."),
+            new(new string[] { "install" }),
+            new(new string[] { "dir", "ls" }),
+            new(new string[] { "cd", "cd\\", "cd..", "cd-" }),
+            new(new string[] { "format" }),
+            new(new string[] { "diskinfo" }, "", new string[] {"[disk number]"} ),
+            new(new string[] { "mkdir" }, "", new string[] {"[folder name]"} ),
+            new(new string[] { "install" }),
+            new(new string[] { "cat" }, "", new string[] {"[filename]"})
             })
         {
         }
-        internal override int Execute(string[] args, CommandShell shell)
+        internal override int Execute(string[] args, CommandShell shell, string rawInput)
         {
             bool silent = false;
             foreach (string arg in args.Skip(1))
             {
                 if (arg == "/s") { silent = true; }
             }
+            args[1] = rawInput.Remove(0, args[0].Length).Trim();
             switch (args[0])
             {
                 case "init":
-                    shell.print = FileManager.Start(!silent);
+                    shell.Print = FileManager.Start();
                     return 0;
                 case "format":
-                    shell.print = "Now formatting " + args[1] + ":";
+                    shell.Print = "Now formatting " + args[1] + ":";
                     FileManager.Format(Convert.ToInt32(args[1]));
-                    shell.print += "\nDone";
+                    shell.Print += "\nDone";
                     return 0;
                 case "install":
                     FileManager.NewFolder(Kernel.SYSTEMPATH);
@@ -298,9 +274,10 @@ namespace NclearOS2.Commands
                     FileManager.NewFolder(Kernel.USERPROGRAMSDATAPATH);
                     FileManager.NewFile(Kernel.SYSTEMCONFIG, "");
                     FileManager.NewFile(Kernel.USERCONFIG, "");
-                    shell.print = "7 folders and 2 files successfully created.";
+                    shell.Print = "7 folders and 2 files successfully created.";
                     return 0;
                 case "dir":
+                case "ls":
                     string txt = "";
                     if (path.Equals("Computer"))
                     {
@@ -308,7 +285,7 @@ namespace NclearOS2.Commands
                         {
                             txt += "\n" + disk;
                         }
-                        shell.print = txt;
+                        shell.Print = txt;
                         return 0;
                     }
                     int dircount = 0;
@@ -335,49 +312,58 @@ namespace NclearOS2.Commands
                     if (filecount == 1) { txt += (filecount + " File - "); }
                     else { txt += (filecount + " Files - "); }
                     txt += (Convert.ToInt32(filesize / 1024f / 1024f) + " MB - " + filesize + " B");
-                    shell.print = txt;
+                    shell.Print = txt;
                     return 0;
                 case "cd":
                     if (args.Length == 1)
                     {
-                        shell.print = "CD: " + path;
+                        shell.Print = "CD: " + path;
                     }
                     else
                     {
-                        if (char.IsDigit(args[1][0]) && args[1].Contains(":"))
+                        if (char.IsDigit(args[1][0]) && args[1].Contains(':'))
                         {
-                            undopath = path;
+                            undoPath = path;
                             path = args[1];
+                        }
+                        else if (args[1].Equals("-"))
+                        {
+                            string i = Convert.ToString(Directory.GetParent(path));
+                            path = (i == "") ? "Computer" : path;
                         }
                         else if (args[1].Equals(".."))
                         {
-                            path = undopath;
+                            path = undoPath;
                         }
                         else
                         {
-                            undopath = path;
+                            undoPath = path;
                             if (path.EndsWith("\\")) { path += args[1]; }
                             else { path += "\\" + args[1]; }
 
                         }
                         if (!VFSManager.DirectoryExists(path))
                         {
-                            shell.print = ("\nPath does not exist");
-                            path = undopath;
+                            shell.Print = ("\nPath does not exist");
+                            path = undoPath;
                         }
                     }
-                    seldisk = Convert.ToByte(path[0]);
+                    selDisk = Convert.ToByte(path[0]);
                     shell.prompt = path + ">";
-                    shell.print = "CD: " + path;
+                    shell.Print = "CD: " + path;
                     return 0;
                 case "cd\\":
-                    path = seldisk + ":\\";
+                    path = selDisk + ":\\";
                     return 0;
                 case "cd..":
-                    path = undopath;
+                    string j = Convert.ToString(Directory.GetParent(path));
+                    path = (j == "") ? "Computer" : path;
+                    return 0;
+                case "cd-":
+                    path = undoPath;
                     return 0;
                 case "diskinfo":
-                    int sel = seldisk;
+                    int sel = selDisk;
                     if (args.Length > 1)
                     {
                         sel = Convert.ToInt32(args[1]);
@@ -390,13 +376,15 @@ namespace NclearOS2.Commands
                     double space = spaceB / 1024f / 1024f;
                     double available_space = available_spaceB / 1024f / 1024f;
                     double used_space = space - available_space;
-                    shell.print = (label + " (" + sel + ":\\)\n\nFile System: " + fs_type + " | Capacity: " + space + " MB - " + spaceB + " B\nUsed Space: " + Convert.ToInt32(used_space) + " MB - " + used_spaceB + " B | Free Space: " + Convert.ToInt32(available_space) + " MB - " + available_spaceB + " B");
+                    shell.Print = (label + " (" + sel + ":\\)\n\nFile System: " + fs_type + " | Capacity: " + space + " MB - " + spaceB + " B\nUsed Space: " + Convert.ToInt32(used_space) + " MB - " + used_spaceB + " B | Free Space: " + Convert.ToInt32(available_space) + " MB - " + available_spaceB + " B");
                     return 0;
                 case "mkdir":
-                    FileManager.NewFolder(args[1]);
+                    if (char.IsDigit(args[1][0]) && args[1].Contains(':')) { FileManager.NewFolder(args[1]); }
+                    else { FileManager.NewFolder(path + "\\" args[1]); }
                     return 0;
                 case "cat":
-                    shell.print = FileManager.Open(args[1]);
+                    if (args[1].Contains('\\')) { shell.Print = FileManager.Open(args[1]); }
+                    else { shell.Print = FileManager.Open(path + "\\" + args[1]); }
                     return 0;
             }
             return 1;

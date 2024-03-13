@@ -3,40 +3,41 @@ using Cosmos.Core.Memory;
 using Cosmos.HAL;
 using Cosmos.HAL.BlockDevice;
 using Cosmos.System;
+using Cosmos.System.Audio.IO;
 using Cosmos.System.Graphics;
 using Cosmos.System.Graphics.Fonts;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Threading;
 
 namespace NclearOS2.GUI
 {
     public class GUI
     {
-        public static Mode displayMode { get; private set; } = new(1280, 720, ColorDepth.ColorDepth32);
-        public static int screenX { get { return displayMode.Columns; } }
-        public static int screenY { get { return displayMode.Rows; } }
+        public static Mode DisplayMode { get; private set; } = new(1280, 720, ColorDepth.ColorDepth32);
+        public static int ScreenX { get { return DisplayMode.Columns; } }
+        public static int ScreenY { get { return DisplayMode.Rows; } }
 
-        public static int fps;
-        private static int fps2;
-        private static int frames;
+        public static short fps;
+        private static short fps2;
+        private static short frames;
         private static bool displayFPS = true;
-
-        public static bool wasClicked;
 
         public static bool Lock = true;
         public static bool screenSaver;
-        public static bool debug;
-        public static byte ExecuteError;
-
+        
+        //private static bool OneClick;
         public static bool Pressed;
-        private static bool OneClick;
-        private static bool StartOneClick;
-        public static bool StartClick;
         public static bool LongPress;
+        //private static bool StartOneClick;
+        //public static bool StartClick;
+
         public static bool Loading;
         public static bool DisplayCursor;
+        public static bool keyCursor = true;
+        public static bool wasClicked;
 
         public static Canvas canvas;
 
@@ -54,26 +55,28 @@ namespace NclearOS2.GUI
 
         public static PCScreenFont font;
         private static Menu menu;
+        private static GlobalInput globalInput;
+        internal static Process screenSaverProcess;
 
-        public static int wallpapernum;
+        public static bool blurEffects = true;
+        public static bool animationEffects = true;
 
-        public static string Init(string overrideRes = null)
+        public static string Init(string overrideRes = null, string customCanvas = "")
         {
             try
             {
-                if (overrideRes != null) { displayMode = ResParse(overrideRes); }
-                else if (Kernel.safeMode) { displayMode = new(800, 600, ColorDepth.ColorDepth32); }
-                else if (Kernel.useDisks) { displayMode = Profiles.LoadSystem(); }
-                SetRes(displayMode, true, true);
                 Lock = true;
-                MouseManager.X = (uint)GUI.screenX / 2;
-                MouseManager.Y = (uint)GUI.screenY / 2;
-                //if (!Kernel.safeMode) { canvas.DrawImage(new Bitmap(Resources.Wallpaper), 0, 0); canvas.DrawFilledRectangle(DarkPen, ((int)(GUI.screenX - "Starting NclearOS".Length * 8) / 2) - 10, (int)(GUI.screenY - 12) / 2, "Starting NclearOS".Length * 8 + 20, 24); }
-                //canvas.DrawString("NclearOS", font, new Pen(Color.LimeGreen), (int)(GUI.screenX - "NclearOS".Length * font.Width) / 2, (int)(GUI.screenY - font.Height * 2) / 2);
-                canvas.DrawImageAlpha(new Bitmap(Resources.CursorLoad), (int)(GUI.screenX) / 2, (int)(GUI.screenY) / 2);
+                DisplayCursor = false;
+                if (overrideRes != null) { DisplayMode = ResParse(overrideRes); }
+                else if (Kernel.safeMode) { DisplayMode = new(800, 600, ColorDepth.ColorDepth32); }
+                else if (Kernel.useDisks) { DisplayMode = Profiles.LoadSystem(); }
+                SetRes(DisplayMode, true, true, customCanvas);
+                //if (!Kernel.safeMode) { canvas.DrawImage(new Bitmap(Resources.Wallpaper), 0, 0); canvas.DrawFilledRectangle(DarkPen, ((int)(GUI.ScreenX - "Starting NclearOS".Length * 8) / 2) - 10, (int)(GUI.ScreenY - 12) / 2, "Starting NclearOS".Length * 8 + 20, 24); }
+                //canvas.DrawString("NclearOS", font, new Pen(Color.LimeGreen), (int)(GUI.ScreenX - "NclearOS".Length * font.Width) / 2, (int)(GUI.ScreenY - font.Height * 2) / 2);
+                canvas.DrawImageAlpha(new Bitmap(Resources.CursorLoad), ScreenX / 2, ScreenY / 2);
                 canvas.Display();
 
-                if(font == null)
+                if (font == null)
                 {
                     font = PCScreenFont.Default;
                     Resources.InitResources();
@@ -84,34 +87,27 @@ namespace NclearOS2.GUI
                 {
                     //Toast.Display("Loading user settings...");
                     //canvas.Display();
-                    Settings.wallpapernum = Profiles.LoadUser();
-                    switch (Settings.wallpapernum)
-                    {
-                        case 1:
-                            ApplyRes(new Bitmap(Resources.WallpaperOld)); break;
-                        case 2:
-                            ApplyRes(new Bitmap(Resources.WallpaperLock)); break;
-                        case 3:
-                            ApplyRes(new Bitmap(Resources.WallpaperOrigami)); break;
-                        case 4:
-                            ApplyRes(new Bitmap(Resources.Wallpaper2005s)); break;
-                        case 5:
-                            ApplyRes(new Bitmap(Resources.WallpaperCosmos)); break;
-                        default:
-                            ApplyRes(new Bitmap(Resources.Wallpaper)); break;
-                    }
-                    ProcessManager.Run(new ScreenSaverService());
-                    ProcessManager.Run(new PerformanceWatchdog());
-                    NclearOS2.Net.Start();
+                    Profiles.LoadUser();
+                    Settings.LoadWallpaper();
+                    if(Sysinfo.InstalledRAM < 120) { blurEffects = false; }
                 }
                 else
                 {
-                    Images.wallpaper = new Bitmap(800, 600, ColorDepth.ColorDepth32);
-                    MemoryOperations.Fill(Images.wallpaper.rawData, Color.CadetBlue.ToArgb());
-                    Images.wallpaperBlur = new Bitmap(800, 600, ColorDepth.ColorDepth32);
-                    menu = new();
+                    blurEffects = false;
+                    animationEffects = false;
+                    Bitmap wallpaper = new(1, 1, DisplayMode.ColorDepth);
+                    MemoryOperations.Fill(wallpaper.rawData, Color.CadetBlue.ToArgb());
+                    Images.RequestSystemWallpaperChange(wallpaper);
                 }
-                ProcessManager.Run(new GlobalInput());
+                ApplyRes();
+                globalInput = new();
+                if (!Kernel.safeMode)
+                {
+                    screenSaverProcess = ProcessManager.Run(new ScreenSaverService());
+                    ProcessManager.Run(new PerformanceWatchdog());
+                    NclearOS2.Net.Start();
+                }
+                if (Kernel.Debug) { ProcessManager.Run(new InfoDisplay()); }
                 DisplayCursor = true;
                 return "OK";
             }
@@ -132,56 +128,49 @@ namespace NclearOS2.GUI
             }
             frames++;
 
-            switch (MouseManager.MouseState)
+            if ((MouseManager.MouseState == MouseState.Left || MouseManager.MouseState == MouseState.Right || GlobalInput.clickAlternative))
             {
-                case MouseState.Left or MouseState.Right:
-                    StartClick = false;
-                    if (!StartOneClick) { StartOneClick = true; StartClick = true; }
-                    OneClick = true;
-                    LongPress = true;
-                    wasClicked = true;
-                    break;
-                case MouseState.None:
-                    Pressed = false;
-                    if (OneClick)
-                    {
-                        Pressed = true;
-                        OneClick = false;
-                        if(!screenSaver && !Lock && MouseManager.Y > 30) { ProcessManager.Click((int)MouseManager.X, (int)MouseManager.Y); }
-                    }
-                    StartOneClick = false;
-                    StartClick = false;
+                LongPress = true;
+                if (!screenSaver && !Lock && MouseManager.Y < ScreenY - 30) { ProcessManager.LongPress((int)MouseManager.X, (int)MouseManager.Y); }
+                wasClicked = true;
+            }
+            else
+            {
+                Pressed = false;
+                if (LongPress)
+                {
+                    Pressed = true;
                     LongPress = false;
-                    break;
+                    if (!screenSaver && !Lock && MouseManager.Y < ScreenY-30)
+                    {
+                        if(!ProcessManager.Click((int)MouseManager.X, (int)MouseManager.Y)) { Desktop.Click((int)MouseManager.X, (int)MouseManager.Y); }
+                    }
+                }
             }
 
             if (screenSaver) { ScreenSaver.Update(); }
+            else if (Lock) { LockScreen.Update(); }
             else
             {
-                if (Lock) { LockScreen.Update(); }
-                else
-                {
-                    canvas.DrawImage(Images.wallpaper, 0, 0);
-                    ProcessManager.Refresh();
-                    menu.Update();
-                }
+                Desktop.Update();
+                globalInput.Update();
+                ProcessManager.Refresh();
+                if (!screenSaver && !Lock && MouseManager.Y < ScreenY - 30) { ProcessManager.Hover((int)MouseManager.X, (int)MouseManager.Y); }
+                Animation.Update();
+                menu.Update();
             }
-            if (debug)
-            {
-                if (ExecuteError == 1) { ExecuteError = 0; throw new Exception("Manual crash"); }
-                else if (ExecuteError == 2) { throw new Exception("Manual crash"); }
-                canvas.DrawString(NclearOS2.Sysinfo.Ram(), font, WhitePen, 10, 0);
-            }
-            
+
             Toast.Update();
+            
+            if (Kernel.Debug) { GUI.canvas.DrawImage(InfoDisplay.display, 0, 0); }
+            
             if (DisplayCursor) { if (Loading) { canvas.DrawImageAlpha(Icons.cursorload, (int)MouseManager.X, (int)MouseManager.Y); } else { canvas.DrawImageAlpha(Icons.cursor, (int)MouseManager.X, (int)MouseManager.Y); } }
 
             if (displayFPS)
             {
-                GUI.canvas.DrawFilledRectangle(DarkPen, (int)GUI.screenX - 14, 0, 14, 7);
-                Font.DrawNumbers(Convert.ToString(fps), Color.Yellow, (int)GUI.screenX - 13, 1);
+                GUI.canvas.DrawFilledRectangle(DarkPen, (int)GUI.ScreenX - 14, 0, 14, 7);
+                Font.DrawNumbers(Convert.ToString(fps), Color.Yellow, (int)GUI.ScreenX - 13, 1);
             }
-
             Heap.Collect();
             canvas.Display();
         }
@@ -191,74 +180,102 @@ namespace NclearOS2.GUI
             Toast.Update();
             canvas.Display();
         }
-        public static void ShutdownGUI(bool restart = false) //to shutdown pc use Kernel.Shutdown() instead
+        public static bool ShutdownGUI(bool restart = false, bool disableCanvas = true, bool force = false) //to shutdown PC use Kernel.Shutdown() instead
         {
+            Kernel.GUIenabled = true; //display Toast messages on GUI for now
             Toast.Force("Stopping processes...");
-            string str = ProcessManager.StopAll();
-            if (str != null) //to do
+            string apps = ProcessManager.StopAll(force);
+            if (apps != null)
             {
-                Toast.Force(str);
-                Thread.Sleep(1000);
+                Kernel.GUIenabled = true;
+                Msg.Main("System", "Apps preventing shutdown:" + apps, Icons.warn, new Option[] { new("Cancel"), new("Force Shutdown",
+                    new Action(() =>
+                    {
+                        if (disableCanvas) { ProcessManager.StopAll(true); Kernel.GUIenabled = false; }
+                        else { Kernel.Shutdown(restart, 1); }
+                    } ))
+                });
+                
+                Toast.Msg = null;
+                return false;
             }
             canvas.DrawImage(Images.wallpaperBlur, 0, 0);
             if (Kernel.useDisks && !Kernel.safeMode)
             {
                 Toast.Force("Saving user settings...");
                 Profiles.Save();
-                Thread.Sleep(500);
+                Thread.Sleep(300);
                 canvas.DrawImage(Images.wallpaperBlur, 0, 0);
             }
-            Toast.Display(restart ? "Restarting..." : "Shutting down...");
-            canvas.Display();
-            Toast.msg = null;
-            Kernel.GUIenabled = false;
+            if (disableCanvas) { canvas.Disable(); canvas = null; }
+            else { Toast.Display(restart ? "Restarting..." : "Shutting down..."); GUI.canvas.Display(); }
+            Toast.Msg = null;
+            globalInput = null;
+            menu = null;
+            Kernel.GUIenabled = !disableCanvas;
+            return true;
         }
-        public static string SetRes(Mode mode, bool fast = false, bool boot = false)
+        public static void SetCanvas(Mode mode, string canvasType = "")
         {
-            try
+            canvas = canvasType switch
             {
-                //canvas = new VBECanvas(new Mode(1280, 800, ColorDepth.ColorDepth32));
-                canvas = (VBECanvas)FullScreenCanvas.GetFullScreenCanvas(mode);
-            }
+                "VBE" => new VBECanvas(mode),
+                "SVGAII" => new SVGAIICanvas(mode),
+                "VGA" => new VGACanvas(mode),
+                _ => FullScreenCanvas.GetFullScreenCanvas(mode),
+            };
+        }
+        public static void SetCanvas(string canvasType = "")
+        {
+            canvas = canvasType switch
+            {
+                "VBE" => new VBECanvas(),
+                "SVGAII" => new SVGAIICanvas(),
+                "VGA" => new VGACanvas(),
+                _ => FullScreenCanvas.GetFullScreenCanvas(),
+            };
+        }
+        public static string SetRes(Mode mode, bool fast = false, bool boot = false, string canvasType = "")
+        {
+            try { SetCanvas(mode, canvasType); }
             catch (Exception e)
             {
-                if (!boot) { SetRes(displayMode, fast); }
-                throw new Exception("Resolution " + mode.Columns + "x" + mode.Rows + " is not available; " + e);
+                if (!string.IsNullOrEmpty(canvasType)) { canvasType += " Canvas: "; }
+                if (!boot) { SetRes(DisplayMode, true); } //rollback to previous res
+                throw new Exception(canvasType + "Resolution " + mode.Columns + "x" + mode.Rows + " is not available; " + e);
             }
-            displayMode = mode;
+            DisplayMode = mode;
             MouseManager.ScreenWidth = (uint)mode.Columns - 5;
             MouseManager.ScreenHeight = (uint)mode.Rows;
+            MouseManager.X = MouseManager.ScreenWidth / 2;
+            MouseManager.Y = MouseManager.ScreenHeight / 2;
             if (!fast)
             {
-                switch (Settings.wallpapernum)
-                {
-                    case 1:
-                        ApplyRes(new Bitmap(Resources.WallpaperOld)); break;
-                    case 2:
-                        ApplyRes(new Bitmap(Resources.WallpaperLock)); break;
-                    case 3:
-                        ApplyRes(new Bitmap(Resources.WallpaperOrigami)); break;
-                    case 4:
-                        ApplyRes(new Bitmap(Resources.Wallpaper2005s)); break;
-                    case 5:
-                        ApplyRes(new Bitmap(Resources.WallpaperCosmos)); break;
-                    default:
-                        ApplyRes(new Bitmap(Resources.Wallpaper)); break;
-                }
+                ApplyRes();
             }
             Kernel.GUIenabled = true;
             return "Successfully changed resolution to " + mode.Columns + "x" + mode.Rows; // mode.ColorDepth.ToString() not implemented
         }
-        public static void ApplyRes(Bitmap wallpaper)
+        public static void ApplyRes()
         {
-            Images.wallpaper = PostProcess.ResizeBitmap(wallpaper, (uint)GUI.screenX, (uint)GUI.screenY);
-            Images.wallpaperBlur = PostProcess.ResizeBitmap(PostProcess.DarkenBitmap(PostProcess.ApplyBlur(PostProcess.ResizeBitmap(wallpaper, 640, 360), 20), 0.5f), (uint)GUI.screenX, (uint)GUI.screenY);
+            if(GUI.ScreenX * GUI.ScreenY > Sysinfo.AvailableRAM * 31000) { throw new Exception("Not enough system memory to complete desktop environment initialization!");  }
+            
+            Images.wallpaper = new((uint)GUI.ScreenX, (uint)GUI.ScreenY, DisplayMode.ColorDepth)
+            { rawData = PostProcess.ResizeBitmap(Images.systemWallpaper, (uint)GUI.ScreenX, (uint)GUI.ScreenY) };
+
+            Images.wallpaperBlur = new((uint)GUI.ScreenX, (uint)GUI.ScreenY, DisplayMode.ColorDepth);
+            if (blurEffects)
+            { Images.wallpaperBlur.rawData = PostProcess.ResizeBitmap(PostProcess.DarkenBitmap(PostProcess.ApplyBlur(PostProcess.ResizeBitmap(Images.systemWallpaper, 640, 360), 20), 0.5f), 640, 360, (uint)GUI.ScreenX, (uint)GUI.ScreenY); }
+            else
+            { Images.wallpaperBlur.rawData = PostProcess.DarkenBitmap(PostProcess.ResizeBitmap(Images.systemWallpaper, (uint)GUI.ScreenX, (uint)GUI.ScreenY), 0.5f); }
+
             menu = new();
             for (int i = 0; i < ProcessManager.running.Count; i++)
             {
                 if (ProcessManager.running[i] is Window w)
                 { w.RefreshBorder(); }
             }
+            NotificationSystem.RefreshBG();
         }
         public static Mode ResParse(string res)
         {
@@ -278,7 +295,7 @@ namespace NclearOS2.GUI
                 {
                     x = Convert.ToUInt32(res.Split('x')[0]);
                     y = Convert.ToUInt32(res.Split('x')[1]);
-                    colorss = displayMode.ColorDepth;
+                    colorss = DisplayMode.ColorDepth;
                 }
                 return new Mode((int)x, (int)y, colorss);
             }
@@ -302,117 +319,69 @@ namespace NclearOS2.GUI
     }
     public class PostProcess
     {
-        public static Bitmap DarkenBitmap(Bitmap bitmap, float factor)
+        public static int[] DarkenBitmap(int[] data, float factor)
         {
-            int[] originalData = bitmap.rawData;
-            int dataSize = originalData.Length;
-
-            // Iterate over each pixel and darken its brightness
-            for (int i = 0; i < dataSize; i++)
+            for (int i = 0; i < data.Length; i++)
             {
-                int argb = originalData[i];
-
-                // Extract the individual color components
-                byte alpha = (byte)((argb >> 24) & 0xFF);
-                byte red = (byte)((argb >> 16) & 0xFF);
-                byte green = (byte)((argb >> 8) & 0xFF);
-                byte blue = (byte)(argb & 0xFF);
-
-                // Darken the color components by applying the specified factor
-                red = (byte)(red * factor);
-                green = (byte)(green * factor);
-                blue = (byte)(blue * factor);
-
-                // Combine the modified color components back into an ARGB value
-                int modifiedArgb = (alpha << 24) | (red << 16) | (green << 8) | blue;
-
-                // Update the pixel in the bitmap with the modified color
-                originalData[i] = modifiedArgb;
+                data[i] = (255 << 24) | ((byte)(((data[i] >> 16) & 0xFF) * factor) << 16) | ((byte)(((data[i] >> 8) & 0xFF) * factor) << 8) | (byte)((data[i] & 0xFF) * factor);
             }
-
-            // Create a new bitmap with the modified data
-            bitmap = new Bitmap(bitmap.Width, bitmap.Height, GUI.displayMode.ColorDepth);
-            bitmap.rawData = originalData;
-            return bitmap;
+            return data;
         }
-        public static Bitmap ResizeBitmap(Bitmap bmp, uint nX, uint nY)
+
+        public static int[] ResizeBitmap(Bitmap bmp, uint nX, uint nY, bool check = false)
         {
-            if (bmp.Width == nX && bmp.Height == nY)
-            {
-                return bmp;
-            }
-            Bitmap resized = new Bitmap(nX, nY, GUI.displayMode.ColorDepth);
-            int[] origIndices = new int[nX * nY];
+            if(check && bmp.Width == nX && bmp.Height == nY) { return bmp.rawData; }
+            int[] result = new int[nX * nY];
+            if (bmp.Width == nX && bmp.Height == nY) { result = bmp.rawData; return result; }
 
             for (int i = 0; i < nX; i++)
             {
                 for (int j = 0; j < nY; j++)
                 {
-                    int origX = (int)(i * bmp.Width / nX);
-                    int origY = (int)(j * bmp.Height / nY);
-                    int origIndex = (int)(origX + origY * bmp.Width);
-                    int resizedIndex = (int)(i + j * nX);
-                    origIndices[resizedIndex] = origIndex;
+                    result[i + j * nX] = bmp.rawData[(i * bmp.Width / nX) + (j * bmp.Height / nY) * bmp.Width];
                 }
             }
+            return result;
+        }
+        public static int[] ResizeBitmap(int[] data, uint x, uint y, uint nX, uint nY)
+        {
+            int[] result = new int[nX * nY];
+            if (x == nX && y == nY) { result = data; return result; }
 
-            for (int i = 0; i < origIndices.Length; i++)
+            for (int i = 0; i < nX; i++)
             {
-                resized.rawData[i] = bmp.rawData[origIndices[i]];
+                for (int j = 0; j < nY; j++)
+                {
+                    result[i + j * nX] = data[(i * x / nX) + (j * y / nY) * x];
+                }
             }
-
-            return resized;
+            return result;
         }
         public static Bitmap CropBitmap(Bitmap bitmap, int x, int y, int width, int height)
         {
-            int[] originalData = bitmap.rawData;
-            int croppedWidth = width;
-            int croppedHeight = height;
-            int[] croppedData = new int[croppedWidth * croppedHeight];
+            Bitmap croppedBitmap = new((uint)width, (uint)height, GUI.DisplayMode.ColorDepth);
 
-            for (int row = 0; row < croppedHeight; row++)
+            for (int row = 0; row < height; row++)
             {
-                for (int col = 0; col < croppedWidth; col++)
+                for (int col = 0; col < width; col++)
                 {
-                    int originalX = x + col;
-                    int originalY = y + row;
-                    int originalIndex = (int)(originalY * bitmap.Width + originalX);
-                    int croppedIndex = row * croppedWidth + col;
-                    croppedData[croppedIndex] = originalData[originalIndex];
+                    croppedBitmap.rawData[row * width + col] = bitmap.rawData[(y + row) * bitmap.Width + (x + col)];
                 }
             }
-            bitmap = new Bitmap((uint)croppedWidth, (uint)croppedHeight, GUI.displayMode.ColorDepth);
-            bitmap.rawData = croppedData;
-            return bitmap;
+            return croppedBitmap;
         }
-        public static Bitmap ApplyBlur(Bitmap bitmap, int blurRadius)
+
+        public static int[] ApplyBlur(int[] originalData, int blurRadius, uint width = 640, uint height = 360)
         {
-            uint width = bitmap.Width;
-            uint height = bitmap.Height;
-
-            // create a temporary bitmap to store the blurred image
-            Bitmap blurredBitmap = new Bitmap(width, height, GUI.displayMode.ColorDepth);
-            int[] blurredData = blurredBitmap.rawData;
-            int[] originalData = bitmap.rawData;
-
-            // calculate the Gaussian kernel
+            int[] blurredData = new int[width * height];
             double[] kernel = new double[blurRadius * 2 + 1];
-            double sigma = blurRadius / 3.0;
             double sum = 0;
             for (int i = 0; i < kernel.Length; i++)
             {
-                double x = i - blurRadius;
-                kernel[i] = Math.Exp(-(x * x) / (2 * sigma * sigma));
+                kernel[i] = Math.Exp(-(Math.Pow(i - blurRadius, 2) / (2 * Math.Pow(blurRadius / 3.0, 2))));
                 sum += kernel[i];
             }
-
-            // normalize the kernel
-            for (int i = 0; i < kernel.Length; i++)
-            {
-                kernel[i] /= sum;
-            }
-
-            // loop through the pixels and apply the blur effect
+            for (int i = 0; i < kernel.Length; i++) { kernel[i] /= sum; }
             for (int y = 0; y < height; y++)
             {
                 for (int x = 0; x < width; x++)
@@ -431,21 +400,27 @@ namespace NclearOS2.GUI
                         g += ((pixel >> 8) & 0xFF) * weight;
                         b += (pixel & 0xFF) * weight;
                     }
-                    long idx2 = y * width + x;
-                    int blurredPixel = ((int)r << 16) | ((int)g << 8) | (int)b;
-                    blurredData[idx2] = blurredPixel;
+                    blurredData[y * width + x] = ((int)r << 16) | ((int)g << 8) | (int)b;
                 }
             }
 
-            return blurredBitmap;
+            return blurredData;
+        }
+        public static int[] ApplyAlpha(int[] data, float alphaFactor)
+        {
+            for (int i = 0; i < data.Length; i++)
+            {
+                data[i] = (Math.Max(0, Math.Min(255, (int)(((data[i] >> 24) & 0xFF) * alphaFactor))) << 24) | (((data[i] >> 16) & 0xFF) << 16) | (((data[i] >> 8) & 0xFF) << 8) | (data[i] & 0xFF);
+            }
+            return data;
         }
     }
     public class Font
     {
         public static int fontX = GUI.font.Width;
         public static int fontY = GUI.font.Height;
-        public static Dictionary<char, bool[]> charCache = new Dictionary<char, bool[]>();
-        public static Dictionary<char, bool[]> numCache = new Dictionary<char, bool[]>();
+        public static Dictionary<char, bool[]> charCache = new();
+        public static Dictionary<char, bool[]> numCache = new();
         public static void Main()
         {
             foreach (char c in "?ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()-_=+[{]}\\|;:'\",<.>/`~")
@@ -597,13 +572,13 @@ namespace NclearOS2.GUI
             }
         }
 
-        public static void DrawChar(char c, int color, int[] canvas, int canvasWidth, int x2, int y2)
+        public static bool DrawChar(char c, int color, int[] canvas, int canvasWidth, int x2, int y2)
         {
             int fontY = Font.fontY;
             int fontX = Font.fontX;
             if (c == ' ')
             {
-                return;
+                return x2 > canvasWidth - fontX * 2;
             }
             bool[] cache = charCache[c];
             for (int py = 0; py < fontY; py++)
@@ -616,14 +591,16 @@ namespace NclearOS2.GUI
                     }
                 }
             }
+            return x2 > canvasWidth - fontX * 2;
         }
         public static void DrawString(string str, int color, int x2, int y2, int[] bitmap, int canvasWidth)
         {
             int ogX = x2;
             foreach (char c in str)
             {
+                //if (y2 + Font.fontY > y) { return; }
                 if (c == '\n') { y2 += 20; x2 = ogX; continue; }
-                DrawChar(c, color, bitmap, canvasWidth, x2, y2);
+                if(DrawChar(c, color, bitmap, canvasWidth, x2, y2)) { y2 += 14; x2 = ogX; continue; }
                 x2 += Font.fontX;
             }
         }

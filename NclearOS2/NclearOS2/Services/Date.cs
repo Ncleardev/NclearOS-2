@@ -110,22 +110,11 @@ namespace NclearOS2
             if (hour.Length == 1) { hour = "0" + hour; }
             string min = RTC.Minute.ToString();
             if (min.Length == 1) { min = "0" + min; }
-            if (DisplaySeconds)
-            {
-                string sec = RTC.Second.ToString();
-                if (sec.Length == 1) { sec = "0" + sec; }
-                return hour + ":" + min + ":" + sec;
-            }
-            else
-            {
-                return hour + ":" + min;
-            }
+            return DisplaySeconds ? hour + ":" + min + ":" + CurrentSecond() : hour + ":" + min;
         }
         public static string CurrentSecond()
         {
-            string sec = RTC.Second.ToString();
-            if (sec.Length == 1) { sec = "0" + sec; }
-            return sec;
+            return RTC.Second.ToString().Length == 1 ? "0" + RTC.Second.ToString() : RTC.Second.ToString();
         }
     }
 }
@@ -133,7 +122,7 @@ namespace NclearOS2.GUI
 {
     internal class Date : Window
     {
-        internal Date() : base("Date", 220, 50, Icons.program, Priority.High) { }
+        internal Date() : base("Date", 220, 50, Icons.program, ProcessManager.Priority.High, WindowManager.Resizable.None) { }
         internal override int Start()
         {
             MemoryOperations.Fill(appCanvas.rawData, Color.Black.ToArgb());
@@ -147,7 +136,7 @@ namespace NclearOS2.GUI
             DrawString(NclearOS2.Date.CurrentDate(true, true), Color.White.ToArgb(), Color.Black.ToArgb(), x - (x / 2) - 100, 25);
         }
 
-        internal override int Stop() { return 0; }
+
     }
 }
 namespace NclearOS2.Commands
@@ -161,7 +150,7 @@ namespace NclearOS2.Commands
             })
         {
         }
-        internal override int Execute(string[] args, CommandShell shell)
+        internal override int Execute(string[] args, CommandShell shell, string rawInput)
         {
             if (args[0] == "time" || args[0] == "date")
             {
@@ -181,7 +170,7 @@ namespace NclearOS2.Commands
                 string str = "";
                 if (!noDate) { str += NclearOS2.Date.CurrentDate(true, true) + " "; }
                 if (!noTime) { str += NclearOS2.Date.CurrentTime(true); }
-                shell.print = str;
+                shell.Print = str;
                 return 0;
             }
             return 1;

@@ -1,13 +1,14 @@
-using Cosmos.Core;
 using Cosmos.System;
+using NclearOS2.GUI;
+using System.Linq;
 
 namespace NclearOS2.GUI
 {
     internal class GlobalInput : Process
     {
         public static KeyEvent keyEvent;
-        public GlobalInput() : base("Input Manager", Priority.Realtime) { }
-        internal override int Start() { return 0; }
+        public static bool clickAlternative;
+        public GlobalInput() : base("Input Manager", ProcessManager.Priority.Realtime) { }
         internal override void Update()
         {
             if (KeyboardManager.TryReadKey(out keyEvent))
@@ -20,48 +21,44 @@ namespace NclearOS2.GUI
                         Menu.Opened = !Menu.Opened;
                         return;
                     case ConsoleKeyEx.F12:
+                        Notify("Quick Launch Process Manager");
                         ProcessManager.Run(new TaskManager());
                         return;
-                    case ConsoleKeyEx.F11:
-                        ProcessManager.Run(new ConsoleApp((int)(GUI.screenX - 250), (int)(GUI.screenY - 100)));
+                    case ConsoleKeyEx.F10:
+                        Notify("Quick Launch Console");
+                        ProcessManager.Run(new ConsoleApp((int)(GUI.ScreenX - 200), (int)(GUI.ScreenY - 100)));
                         return;
                     case ConsoleKeyEx.F4:
                         if (KeyboardManager.AltPressed)
                         {
-                            if (Menu.Opened) { Menu.Opened = false; }
-                            else
-                            {
-                                if (ProcessManager.running.Count > 0 && ProcessManager.running[0] is Window) { ProcessManager.RemoveAt(0); }
-                                else { GUI.Lock = true; }
-                            }
+                            if (Menu.Opened) { Menu.Opened = false; return; }
+                            else if (ProcessManager.running.Count(p => p is Window) == 0) { GUI.Lock = true; return; }
                         }
-                        else { SendKey(keyEvent); }
+                        ProcessManager.Key(keyEvent);
                         return;
                     case ConsoleKeyEx.Escape:
-                        if(KeyboardManager.ControlPressed) { Menu.Opened = !Menu.Opened; return; }
+                        if (KeyboardManager.ControlPressed) { Menu.Opened = !Menu.Opened; return; }
                         if (Menu.Opened) { Menu.Opened = false; }
-                        else { SendKey(keyEvent); }
+                        else { ProcessManager.Key(keyEvent); }
                         return;
                     case ConsoleKeyEx.Delete:
-                        if (KeyboardManager.ControlPressed && KeyboardManager.AltPressed) { Cosmos.System.Power.Reboot(); }
-                        else { SendKey(keyEvent); }
+                        if (KeyboardManager.ControlPressed && KeyboardManager.AltPressed) { Power.Reboot(); }
+                        else { ProcessManager.Key(keyEvent); }
                         return;
                     case ConsoleKeyEx.Tab:
                         if (KeyboardManager.AltPressed) { WindowManager.FocusAtWindow(1); }
                         return;
+                    case ConsoleKeyEx.Num6: if (GUI.keyCursor) { MouseManager.X += (uint)MouseManager.MouseSensitivity * 12; } else { ProcessManager.Key(keyEvent); } break;
+                    case ConsoleKeyEx.Num4: if (GUI.keyCursor) { MouseManager.X -= (uint)MouseManager.MouseSensitivity * 12; } else { ProcessManager.Key(keyEvent); } break;
+                    case ConsoleKeyEx.Num8: if (GUI.keyCursor) { MouseManager.Y -= (uint)MouseManager.MouseSensitivity * 12; } else { ProcessManager.Key(keyEvent); } break;
+                    case ConsoleKeyEx.Num2: if (GUI.keyCursor) { MouseManager.Y += (uint)MouseManager.MouseSensitivity * 12; } else { ProcessManager.Key(keyEvent); } break;
+                    case ConsoleKeyEx.Num5: clickAlternative = true; break;
                     default:
-                        SendKey(keyEvent);
+                        ProcessManager.Key(keyEvent);
                         return;
                 }
             }
-        }
-        internal override int Stop() { return 0; }
-        internal static void SendKey(KeyEvent keyEvent)
-        {
-            if (ProcessManager.running.Count > 0 && ProcessManager.running[0] is Window w)
-            {
-                w?.OnKeyPressed?.Invoke(keyEvent);
-            }
+            else if (clickAlternative) { clickAlternative = false; }
         }
     }
 }

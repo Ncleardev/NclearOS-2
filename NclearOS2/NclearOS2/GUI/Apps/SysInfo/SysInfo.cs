@@ -39,7 +39,7 @@ namespace NclearOS2
         }
         public static string Main()
         {
-            return Kernel.OSVERSION + "\n" + DisplayRes +"\nCPU: " + CPUname + "\nCPU Uptime: " + CPUuptime;
+            return "OS: " + Kernel.OSVERSION + "\n" + DisplayRes +"\nCPU: " + CPUname + "\nCPU Uptime: " + CPUuptime;
         }
         public static string Ram()
         {
@@ -51,21 +51,44 @@ namespace NclearOS2.GUI
 {
     internal class InfoSystem: Window
     {
-        internal InfoSystem() : base("System Info", 500, 200, new Bitmap(Resources.InfoSystemIcon), Priority.High) { }
+        internal InfoSystem() : base("System Info", 500, 200, new Bitmap(Resources.InfoSystemIcon), ProcessManager.Priority.High) { }
         internal override int Start()
         {
-            MemoryOperations.Fill(appCanvas.rawData, GUI.DarkGrayPen.ValueARGB);
+            Background(GUI.DarkGrayPen.ValueARGB);
             return 0;
         }
         internal override void Update()
         {
-            MemoryOperations.Fill(appCanvas.rawData, GUI.DarkGrayPen.ValueARGB);
+            Background(GUI.DarkGrayPen.ValueARGB);
             DrawString(NclearOS2.Sysinfo.Main(), Color.White.ToArgb(), GUI.DarkGrayPen.ValueARGB, 10, 10);
-            DrawString("FPS: " + GUI.fps, Color.White.ToArgb(), GUI.DarkGrayPen.ValueARGB, 10, 90);
+            DrawString("FPS: " + GUI.fps + " | Frametime: " + (1000.0f / GUI.fps).ToString("0.0") + " ms", Color.White.ToArgb(), GUI.DarkGrayPen.ValueARGB, 10, 90);
             DrawString(NclearOS2.Sysinfo.Ram(), Color.White.ToArgb(), GUI.DarkGrayPen.ValueARGB, 10, 110);
         }
+    }
 
-        internal override int Stop() { return 0; }
+    internal class InfoDisplay : Process
+    {
+        public InfoDisplay() : base("Performance Display", ProcessManager.Priority.High) { }
+        public static Bitmap bg;
+        public static Bitmap display;
+        public static Process infoDisplay;
+        internal override int Start()
+        {
+            bg = PostProcess.CropBitmap(Images.wallpaperBlur, 0, 0, 240, 35);
+            display = new(240, 35, GUI.DisplayMode.ColorDepth);
+            return 0;
+        }
+        internal override void Update()
+        {
+            MemoryOperations.Copy(display.rawData, bg.rawData);
+            Font.DrawString(Sysinfo.Ram(), Color.White.ToArgb(), 2, 2, display.rawData, 240);
+            Font.DrawString(GUI.fps + " FPS | " + (1000.0f / GUI.fps).ToString("0.0") + " ms", Color.White.ToArgb(), 2, 18, display.rawData, 240);
+        }
+        internal override int Stop(bool force = false)
+        {
+            display = null;
+            return 0;
+        }
     }
 }
 namespace NclearOS2.Commands
@@ -79,11 +102,11 @@ namespace NclearOS2.Commands
             })
         {
         }
-        internal override int Execute(string[] args, CommandShell shell)
+        internal override int Execute(string[] args, CommandShell shell, string rawInput)
         {
             if (args[0] == "sysinfo" || args[0] == "systeminfo" || args[0] == "sys" || args[0] == "system")
             {
-                shell.print = NclearOS2.Sysinfo.Main() + "\n" + NclearOS2.Sysinfo.Ram();
+                shell.Print = NclearOS2.Sysinfo.Main() + "\n" + NclearOS2.Sysinfo.Ram();
                 return 0;
             }
             return 1;

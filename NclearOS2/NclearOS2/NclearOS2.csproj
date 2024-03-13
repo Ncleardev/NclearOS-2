@@ -13,14 +13,13 @@
         <StartCosmosGDB>False</StartCosmosGDB>
         <VisualStudioDebugPort>Pipe: Cosmos\Serial</VisualStudioDebugPort>
         <CosmosDebugPort>Serial: COM1</CosmosDebugPort>
-        <Launch>ISO</Launch>
         <Profile>VMware</Profile>
         <Description>Use VMware Player or Workstation to deploy and debug.</Description>
         <PxeInterface>192.168.0.8</PxeInterface>
-        <RemoveBootDebugOutput>True</RemoveBootDebugOutput>
         <DebugEnabled>False</DebugEnabled>
-        <VMWareEdition>Workstation</VMWareEdition>
+        <Launch>ISO</Launch>
         <CompressionType>Gzip</CompressionType>
+        <RemoveBootDebugOutput>True</RemoveBootDebugOutput>
     </PropertyGroup>
 
     <ItemGroup>
@@ -36,6 +35,7 @@
       <None Remove="GUI\Resources\Cursors\CursorLoad.bmp" />
       <None Remove="GUI\Resources\Cursors\CursorWhite.bmp" />
       <None Remove="GUI\Resources\Cursors\CursorWhiteLoad.bmp" />
+      <None Remove="GUI\Resources\logo.bmp" />
       <None Remove="GUI\Resources\UI\check.bmp" />
       <None Remove="GUI\Resources\UI\check2.bmp" />
       <None Remove="GUI\Resources\UI\circle.bmp" />
@@ -45,6 +45,10 @@
       <None Remove="GUI\Resources\UI\error.bmp" />
       <None Remove="GUI\Resources\UI\info.bmp" />
       <None Remove="GUI\Resources\UI\loading.bmp" />
+      <None Remove="GUI\Resources\UI\max.bmp" />
+      <None Remove="GUI\Resources\UI\max2.bmp" />
+      <None Remove="GUI\Resources\UI\min.bmp" />
+      <None Remove="GUI\Resources\UI\min2.bmp" />
       <None Remove="GUI\Resources\UI\minimize.bmp" />
       <None Remove="GUI\Resources\UI\minimize2.bmp" />
       <None Remove="GUI\Resources\UI\program.bmp" />
@@ -56,7 +60,6 @@
       <None Remove="GUI\Resources\Wallpapers\Wallpaper.bmp" />
       <None Remove="GUI\Resources\Wallpapers\WallpaperLock.bmp" />
       <None Remove="GUI\Resources\Wallpapers\WallpaperOld.bmp" />
-      <None Remove="GUI\Resources\Wallpapers\wallpaperorigami.bmp" />
       <None Remove="GUI\UI\Menu\connected.bmp" />
       <None Remove="GUI\UI\Menu\lock.bmp" />
       <None Remove="GUI\UI\Menu\reboot.bmp" />
@@ -79,6 +82,7 @@
       <EmbeddedResource Include="GUI\Resources\Cursors\CursorLoad.bmp" />
       <EmbeddedResource Include="GUI\Resources\Cursors\CursorWhite.bmp" />
       <EmbeddedResource Include="GUI\Resources\Cursors\CursorWhiteLoad.bmp" />
+      <EmbeddedResource Include="GUI\Resources\logo.bmp" />
       <EmbeddedResource Include="GUI\Resources\UI\check.bmp" />
       <EmbeddedResource Include="GUI\Resources\UI\check2.bmp" />
       <EmbeddedResource Include="GUI\Resources\UI\circle.bmp" />
@@ -88,6 +92,10 @@
       <EmbeddedResource Include="GUI\Resources\UI\error.bmp" />
       <EmbeddedResource Include="GUI\Resources\UI\info.bmp" />
       <EmbeddedResource Include="GUI\Resources\UI\loading.bmp" />
+      <EmbeddedResource Include="GUI\Resources\UI\max.bmp" />
+      <EmbeddedResource Include="GUI\Resources\UI\max2.bmp" />
+      <EmbeddedResource Include="GUI\Resources\UI\min.bmp" />
+      <EmbeddedResource Include="GUI\Resources\UI\min2.bmp" />
       <EmbeddedResource Include="GUI\Resources\UI\minimize.bmp" />
       <EmbeddedResource Include="GUI\Resources\UI\minimize2.bmp" />
       <EmbeddedResource Include="GUI\Resources\UI\program.bmp" />

@@ -11,6 +11,7 @@ using System.Drawing;
 using System.Threading;
 using Display = NclearOS2.GUI.GUI;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace NclearOS2
 {
@@ -54,11 +55,15 @@ namespace NclearOS2
                 Sysinfo.CPUname = CPU.GetCPUBrandString();
                 if (Kernel.useDisks) { FileManager.Start(); }
             }
-            
-            if (useGUI)
+
+            while (true)
             {
-                err = Display.Init();
-                if (err != "OK") { useGUI = false; BootMenu(); }
+                if (useGUI)
+                {
+                    err = Display.Init();
+                    if (err == "OK") { return; } else { useGUI = false; BootMenu(); }
+                }
+                else { return; }
             }
         }
         public static void BootMenu()
@@ -81,7 +86,7 @@ namespace NclearOS2
                     {
                         case ConsoleKey.Escape:
                             Kernel.Shutdown();
-                            while (true) ;
+                            while (true);
                         case ConsoleKey.Q:
                             Kernel.safeMode = true;
                             Kernel.useDisks = false;
@@ -105,7 +110,7 @@ namespace NclearOS2
         {
             if(shell == null)
             {
-                shell = new CommandShell { crashClient = ExecuteError, update = Result };
+                shell = new CommandShell { crashClient = ExecuteError, update = Result, clearScreen = Clear };
                 Console.ResetColor();
                 Console.ForegroundColor = ConsoleColor.Green;
                 Console.Clear();
@@ -113,8 +118,8 @@ namespace NclearOS2
                 //Console.CursorVisible = true;
                 Console.WriteLine(Kernel.OSVERSION + "\n");
             }
-            //yPos = Console.CursorTop + 1;
-            shell.Execute(Input());
+            try { if (shell.Execute(Input()) == 2) { shell.Print += "Wrong parameter"; } }
+            catch (Exception e) { shell = null; Console.WriteLine("Command Shell crashed: " + e.Message + "; Press Enter to restart."); Console.ReadLine(); }
             Heap.Collect();
         }
         private static void ExecuteError()
@@ -123,7 +128,42 @@ namespace NclearOS2
         }
         private static void Result()
         {
-            Console.WriteLine(shell.print);
+            string[] strings = shell.Print.Split('\n');
+
+            if (strings.Length > Console.WindowHeight - 1)
+            {
+                int i = 0;
+                foreach(string s in strings)
+                {
+                    i++;
+                    Console.WriteLine(s);
+                    if (i + 4 > Console.WindowHeight)
+                    {
+                        ConsoleColor consoleColor = Console.ForegroundColor;
+                        ConsoleColor consoleColorBg = Console.BackgroundColor;
+                        Console.ForegroundColor = ConsoleColor.Green;
+                        Console.BackgroundColor = ConsoleColor.Black;
+                        Console.Write("Press Enter to continue...");
+                        Console.ReadLine();
+                        Console.CursorTop--;
+                        Console.ForegroundColor = ConsoleColor.Gray;
+                        Console.WriteLine("---                       ");
+                        Console.ForegroundColor = consoleColor;
+                        Console.BackgroundColor = consoleColorBg;
+                        i = 0;
+                    }
+                }
+            }
+            else Console.WriteLine(shell.Print);
+        }
+        private static void Clear()
+        {
+            Console.ResetColor();
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.Clear();
+            Console.ResetColor();
+            //Console.CursorVisible = true;
+            Console.WriteLine(Kernel.OSVERSION + "\n");
         }
         private static string Input()
         {
@@ -171,7 +211,7 @@ namespace NclearOS2
                             Console.CursorLeft = 0;
                             Console.Write(new string(' ', Console.WindowWidth - 1));
                             Console.CursorTop--;
-                            Console.Write("\n" + shell.prompt);
+                            Console.Write("\n" + shell.prompt + " ");
                             input = history[history.Count - position];
                             Console.Write(input);
                         }
@@ -190,6 +230,11 @@ namespace NclearOS2
                         break;
                 }
             }
+        }
+        public static void MsgInCenter(string msg)
+        {
+            Console.SetCursorPosition((Console.WindowWidth - msg.Length) / 2, Console.WindowHeight / 2 - 1);
+            Console.Write(msg);
         }
     }
 }

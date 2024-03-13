@@ -10,33 +10,43 @@ namespace NclearOS2.GUI
 {
     internal abstract class Window : Process
     {
-        internal Window(string name, int x, int y, Bitmap icon, Priority priority) : base(name, priority)
+        internal Window(string name, int x, int y, Bitmap icon = null, ProcessManager.Priority priority = ProcessManager.Priority.None, WindowManager.Resizable resizable = WindowManager.Resizable.Full) : base(name, priority)
         {
             this.name = name;
-            this.x = x;
-            this.y = y;
-            this.icon = icon;
             this.StartX = this.StartY = this.StartXOld = this.StartYOld = ProcessManager.running.Count(p => p is Window) * 20 + 50;
-            appCanvas = new Bitmap((uint)x, (uint)y, GUI.displayMode.ColorDepth);
+            this.x = ogX = x;
+            this.y = ogY = y;
+            if (this.x > GUI.ScreenX) { this.x = ogX = GUI.ScreenX; }
+            if (this.y > GUI.ScreenY) { this.y = ogY = GUI.ScreenY; }
+            if (this.StartX + this.x > GUI.ScreenX) { this.StartX = 0; }
+            this.icon = icon ?? Icons.program;
+            this.resizable = resizable;
+            appCanvas = new Bitmap((uint)x, (uint)y, GUI.DisplayMode.ColorDepth);
             RefreshBorder();
         }
         internal int x;
         internal int y;
+        internal int ogX;
+        internal int ogY;
         internal int StartX;
         internal int StartY;
         internal int StartXOld;
         internal int StartYOld;
+        internal int ogStartX;
+        internal int ogStartY;
         internal bool windowlock;
+        internal WindowManager.Resizable resizable;
         internal Bitmap icon;
-        internal bool minimized;
+        internal bool minimized = true;
         internal Bitmap appCanvas;
         internal Bitmap borderCanvas;
         internal Action<int, int> OnClicked;
-        //internal Action<int, int> OnLongPressed;
+        internal Action<int, int> OnHover;
+        internal Action<int, int> OnLongPressed;
         internal Action<KeyEvent> OnKeyPressed;
         internal Action OnStartMoving;
         internal Action OnMoved;
-        internal Action OnBackgroundChange;
+        internal Action OnSizeChange;
 
         public bool DrawChar(char c, int color, int bg, int[] canvas, int canvasWidth, int x2, int y2)
         {
@@ -173,14 +183,120 @@ namespace NclearOS2.GUI
         {
             appCanvas = PostProcess.CropBitmap(Images.wallpaperBlur, StartX, StartY + 30, x, y);
         }
-        public void RefreshBorder()
+        public void RefreshBorder(bool effects = true)
         {
-            this?.OnBackgroundChange?.Invoke();
-            borderCanvas = PostProcess.CropBitmap(Images.wallpaperBlur, StartX, StartY, x, 30);
-            Font.DrawString(name, Color.White.ToArgb(), 36, 10, borderCanvas.rawData, x);
+            if (effects) { borderCanvas = PostProcess.CropBitmap(Images.wallpaperBlur, StartX, StartY, x, 30); }
+            else { MemoryOperations.Fill(borderCanvas.rawData, 0); }
+            
+            if(ID == 0) { Font.DrawString(name, Color.White.ToArgb(), 36, 10, borderCanvas.rawData, x); }
+            else { Font.DrawString(name, Color.Gray.ToArgb(), 36, 10, borderCanvas.rawData, x); }
             Font.DrawImageAlpha(icon, 5, 3, borderCanvas.rawData, x);
-            Font.DrawImageAlpha(Icons.minimize, x - 50, 7, borderCanvas.rawData, x);
+
+            if(resizable != WindowManager.Resizable.None)
+            {
+                Font.DrawImageAlpha(Icons.minimize, x - 80, 7, borderCanvas.rawData, x);
+                if(x >= GUI.ScreenX && y >= GUI.ScreenY-60) { Font.DrawImageAlpha(Icons.min, x - 50, 7, borderCanvas.rawData, x); }
+                else { Font.DrawImageAlpha(Icons.max, x - 50, 7, borderCanvas.rawData, x); }
+            }
+            else { Font.DrawImageAlpha(Icons.minimize, x - 50, 7, borderCanvas.rawData, x); }
             Font.DrawImageAlpha(Icons.close, x - 20, 7, borderCanvas.rawData, x);
+        }
+        internal void Notify(string text)
+        {
+            NotificationSystem.Notify(name, text, icon);
+        }
+        public void Click(int x2, int y2)
+        {
+            WindowManager.FocusAtWindow(ID);
+            if (y2 - StartY > 30) { OnClicked?.Invoke(x2 - StartX, y2 - StartY - 30); }
+        }
+        public void Hover(int x2, int y2)
+        {
+            y2 -= StartY;
+            if (y2 > 30) { OnHover?.Invoke(x2 - StartX, y2 - StartY - 30); return; }
+            x2 -= StartX;
+            if (x2 > x - 24)
+            {
+                GUI.canvas.DrawImageAlpha(Icons.close2, StartX - 20 + x, StartY + 7);
+                if (GUI.Pressed) { Exit(); return; }
+            }
+            else if (x2 > x - 54)
+            {
+                if (resizable != WindowManager.Resizable.None) {
+                    if (x >= GUI.ScreenX && y >= GUI.ScreenY - 60)
+                    {
+                        GUI.canvas.DrawImageAlpha(Icons.min2, StartX - 50 + x, StartY + 7);
+                        if (GUI.Pressed) { NewSize(ogX, ogY); }
+                    }
+                    else
+                    {
+                        GUI.canvas.DrawImageAlpha(Icons.max2, StartX - 50 + x, StartY + 7);
+                        if (GUI.Pressed) { NewSize(GUI.ScreenX, GUI.ScreenY); }
+                    }
+                }
+                else
+                {
+                    GUI.canvas.DrawImageAlpha(Icons.minimize2, StartX - 50 + x, StartY + 7);
+                    if (GUI.Pressed) { Minimize(); }
+                }
+            }
+            else if (resizable != WindowManager.Resizable.None && x2 > x - 84)
+            {
+                GUI.canvas.DrawImageAlpha(Icons.minimize2, StartX - 80 + x, StartY + 7);
+                if (GUI.Pressed) { Minimize(); }
+            }
+            else if(GUI.LongPress)
+            {
+                StartXOld = StartX - (int)MouseManager.X;
+                StartYOld = StartY - (int)MouseManager.Y;
+                windowlock = true;
+                WindowManager.FocusAtWindow(ID);
+                RefreshBorder(false);
+                OnStartMoving?.Invoke();
+            }
+        }
+        public void LongPress(int x2, int y2)
+        {
+            OnLongPressed?.Invoke(x2 - StartX, y2 - StartY - 30);
+        }
+        public void Minimize()
+        {
+            if (!minimized) { minimized = true; Animation.Running.Add(new Animator(50, borderCanvas, (short)(ID * 40 + 50), (short)(GUI.ScreenY - 30), (short)StartX, (short)StartY)); Animation.Running.Add(new Animator(50, appCanvas, (short)(ID * 40 + 50), (short)(GUI.ScreenY), (short)StartX, (short)(StartY + 30))); }
+        }
+        public void Unminimize()
+        {
+            if (minimized) { Animation.Running.Add(new Animator(50, borderCanvas, (short)StartX, (short)StartY, (short)(ID * 40 + 50), (short)(GUI.ScreenY - 30), new(() => { minimized = false; WindowManager.Draw(this); }))); Animation.Running.Add(new Animator(50, appCanvas, (short)StartX, (short)(StartY + 30), (short)(ID * 40 + 50), (short)(GUI.ScreenY))); }
+        }
+        public void NewSize(int nX, int nY)
+        {
+            if (nY > GUI.ScreenY - 60) { nY = GUI.ScreenY - 60; }
+            if (nX > GUI.ScreenX) { nX = GUI.ScreenX; }
+            x = nX; y = nY;
+            if (nX == GUI.ScreenX) { ogStartX = StartX; StartX = 0; }
+            else { StartX = ogStartX; ogY = y; }
+            if (nY == GUI.ScreenY - 60) { ogStartY = StartY; StartY = 0; }
+            else { StartY = ogStartY; ogX = x; }
+            RefreshBorder();
+            if (resizable == WindowManager.Resizable.Scale) { return; }
+            appCanvas = new Bitmap((uint)nX, (uint)y, GUI.DisplayMode.ColorDepth);
+            if (OnSizeChange != null) { OnSizeChange.Invoke(); } else { Start(); }
+        }
+        public void OnKey(KeyEvent keyEvent)
+        {
+            switch (keyEvent.Key)
+            {
+                case ConsoleKeyEx.F4:
+                    if (KeyboardManager.AltPressed) { Exit(); return; } break;
+                case ConsoleKeyEx.F11:
+                    if (resizable != WindowManager.Resizable.None)
+                    {
+                        if (x >= GUI.ScreenX && y >= GUI.ScreenY - 60) { NewSize(ogX, ogY); }
+                        else { NewSize(GUI.ScreenX, GUI.ScreenY); }
+                    }
+                    break;
+            }
+            OnKeyPressed?.Invoke(keyEvent);
+
         }
     }
 }

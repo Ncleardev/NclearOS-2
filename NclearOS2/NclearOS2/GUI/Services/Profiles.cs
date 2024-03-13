@@ -1,3 +1,4 @@
+using Cosmos.System;
 using Cosmos.System.FileSystem.VFS;
 using Cosmos.System.Graphics;
 using System;
@@ -25,7 +26,7 @@ namespace NclearOS2.GUI
                 }
             }
             catch { }
-            return GUI.displayMode;
+            return GUI.DisplayMode;
         }
 
         public static int LoadUser()
@@ -60,6 +61,10 @@ namespace NclearOS2.GUI
                             else if (line.Contains("Black")) { GUI.SystemPen = GUI.DarkPen; }
                             else if (line.Contains("R=40, G=40, B=40")) { GUI.SystemPen = GUI.DarkGrayPen; }
                         }
+                        else if (line.Contains("CursorSensivity: "))
+                        {
+                            MouseManager.MouseSensitivity = (float)Convert.ToInt32(line.Replace("CursorSensivity: ", "")) / 100;
+                        }
                     }
                 }
             }
@@ -74,7 +79,7 @@ namespace NclearOS2.GUI
                 if (Kernel.useDisks && !Kernel.safeMode)
                 {
                     if (!VFSManager.DirectoryExists(Kernel.PROGRAMSDATAPATH)) { F.NewFolder(Kernel.PROGRAMSDATAPATH, true); }
-                    F.Save(Kernel.SYSTEMCONFIG, "NclearOS 2 System Config\nScreenRes: " + GUI.screenX + "x" + GUI.screenY + "\n              ", true);
+                    F.Save(Kernel.SYSTEMCONFIG, "NclearOS 2 System Config\nScreenRes: " + GUI.ScreenX + "x" + GUI.ScreenY + "\n              ", true);
                     if (!VFSManager.DirectoryExists(Kernel.USERPROGRAMSDATAPATH)) { F.NewFolder(Kernel.USERPROGRAMSDATAPATH, true); }
                     F.Save(Kernel.USERCONFIG, "NclearOS 2 User Config\nWallpaperNum: " + Convert.ToString(Settings.wallpapernum) + "\nCursorType: " + (Settings.cursorWhite ? 1 : 0) + "\nColorTheme: " + Convert.ToString(GUI.SystemPen) + "\n              ", true);
                 }

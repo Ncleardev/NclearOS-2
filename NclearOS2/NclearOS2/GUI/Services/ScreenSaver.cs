@@ -2,23 +2,25 @@
 using Cosmos.HAL;
 using Cosmos.Core.Memory;
 using Cosmos.System.Graphics;
+using System;
 
 namespace NclearOS2.GUI
 {
     public class ScreenSaver
     {
-        private static int x = 0;
-        private static int y = 0;
-        private static int step = 2;
-        private static System.Random rnd = new System.Random();
+        private static Bitmap logo = new(Resources.Logo);
+        private static float x = 0;
+        private static float y = 0;
+        private static float stepX = 1;
+        private static float stepY = 1;
         private static bool i;
         public static void Update()
         {
+            GUI.canvas.Clear();
             if (!i)
             {
                 GUI.Lock = true;
                 GUI.DisplayCursor = false;
-                GUI.canvas.Clear();
                 i = true;
             }
             if (KeyboardManager.TryReadKey(out KeyEvent keyEvent) || GUI.Pressed)
@@ -27,21 +29,18 @@ namespace NclearOS2.GUI
                 GUI.screenSaver = false;
                 GUI.DisplayCursor = true;
             }
-            x += step;
-            y++;
-            if(y % 100 == 0) { step = rnd.Next(1, 5); }
-            GUI.canvas.DrawPoint(GUI.SystemPen, x, y);
-            GUI.canvas.DrawPoint(GUI.SystemPen, x-1, y-1);
-            GUI.canvas.DrawPoint(GUI.SystemPen, x+1, y+1);
-            if (x > GUI.screenX-5) { x = 0; y = 0;}
-            GUI.canvas.DrawFilledRectangle(GUI.DarkPen, (int)GUI.screenX - 200, (int)GUI.screenY - 36, 200, 36);
-            Font.DrawString(NclearOS2.Date.CurrentTime(true),System.Drawing.Color.White, (int)GUI.screenX - 200, (int)GUI.screenY - 36);
-            Font.DrawString(NclearOS2.Date.CurrentDate(true, false), System.Drawing.Color.White, (int)GUI.screenX - 200, (int)GUI.screenY - 20);
+            GUI.canvas.DrawImage(logo, (int)x, (int)y);
+            if (x >= GUI.ScreenX-logo.Width) { stepX = -1; } else if (x <= 0) { stepX = 1; }
+            if (y >= GUI.ScreenY-logo.Height) { stepY = -1; } else if (y <= 0) { stepY = 1; }
+            x += stepX * (1.0f / GUI.fps) * 100;
+            y += stepY * (1.0f / GUI.fps) * 100;
+            Font.DrawString(NclearOS2.Date.CurrentTime(true),System.Drawing.Color.White, (int)GUI.ScreenX - 200, (int)GUI.ScreenY - 36);
+            Font.DrawString(NclearOS2.Date.CurrentDate(true, false), System.Drawing.Color.White, (int)GUI.ScreenX - 200, (int)GUI.ScreenY - 20);
         }
     }
     internal class ScreenSaverService : Process
     {
-        public ScreenSaverService() : base("Screensaver Service", Priority.Low) { }
+        public ScreenSaverService() : base("Screensaver Service", ProcessManager.Priority.Low) { }
         private int counter;
         private uint oldXMouse;
         private uint oldYMouse;
@@ -65,6 +64,5 @@ namespace NclearOS2.GUI
             }
             else { counter = 0; oldXMouse = MouseManager.X; oldYMouse = MouseManager.Y; }
         }
-        internal override int Stop() { return 0; }
     }
 }

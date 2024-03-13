@@ -27,15 +27,15 @@ namespace NclearOS2.GUI
         private List<string> history = new();
         private int position = 0;
         private CommandShell shell;
-        internal ConsoleApp(int x, int y) : base("Console", x, y, new Bitmap(Resources.ConsoleIcon), Priority.None) { OnKeyPressed = Key; }
-        internal override void Update() { throw new Exception("Manual Crash"); }
+        internal ConsoleApp(int x, int y) : base("Console", x, y, new Bitmap(Resources.ConsoleIcon), ProcessManager.Priority.None) { OnKeyPressed = Key; OnSizeChange = new(() => { UI(); DrawString(Input, Color.White.ToArgb(), Color.Black.ToArgb(), shell.prompt.Length * GUI.font.Width + 12, 10); }); }
+        internal override void Update() { throw new Exception("Manual Crash"); } //ExecuteError
         internal override int Start()
         {
             shell = new CommandShell { crashClient = ExecuteError, update = Result };
             UI();
             return 0;
         }
-        internal override int Stop() { shell = null; return 0; }
+        internal override int Stop(bool f) { shell = null; return 0; }
         private void Key(KeyEvent key)
         {
             switch (key.Key)
@@ -47,22 +47,23 @@ namespace NclearOS2.GUI
                     GUI.Loading = true;
                     GUI.Refresh();
                     history.Add(input);
-                    try { if(shell.Execute(input) == 2) { shell.print += "Wrong parameter"; } }
+                    try { if(shell.Execute(input) == 2) { shell.Print += "Wrong parameter"; } }
                     catch (Exception e) { shell = null; HandleShellCrash(e.Message); }
+                    position = 0;
                     input = null;
                     GUI.Loading = false;
                     break;
                 case ConsoleKeyEx.UpArrow:
                     if (history.Count - position > 0)
                     {
-                        ++position;
+                        position++;
                         input = history[history.Count - position];
                     }
                     break;
                 case ConsoleKeyEx.DownArrow:
                     if (position > 1)
                     {
-                        --position;
+                        position--;
                         input = history[history.Count - position];
                     }
                     break;
@@ -74,6 +75,7 @@ namespace NclearOS2.GUI
                     break;
                 case ConsoleKeyEx.F1:
                     input = null;
+                    position = 0;
                     shell.Execute("help");
                     break;
                 default:
@@ -89,7 +91,7 @@ namespace NclearOS2.GUI
         }
         private void ExecuteError()
         {
-            this.priority = Priority.Realtime;
+            this.priority = ProcessManager.Priority.Realtime;
         }
         private void HandleShellCrash(string err)
         {
@@ -100,7 +102,7 @@ namespace NclearOS2.GUI
         {
             Background();
             DrawString(shell.prompt, Color.White.ToArgb(), 0, 10, 10);
-            DrawString(shell.print, Color.White.ToArgb(), 0, 10, 35);
+            DrawString(shell.Print, Color.White.ToArgb(), 0, 10, 35);
         }
     }
 }

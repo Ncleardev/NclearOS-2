@@ -6,7 +6,7 @@ using System;
 
 namespace NclearOS2.GUI
 {
-    public class Icons
+    public static class Icons
     {
         //Cursors
         public static Bitmap cursor;
@@ -21,6 +21,10 @@ namespace NclearOS2.GUI
         public static Bitmap close2;
         public static Bitmap minimize;
         public static Bitmap minimize2;
+        public static Bitmap min;
+        public static Bitmap min2;
+        public static Bitmap max;
+        public static Bitmap max2;
 
         public static Bitmap program;
 
@@ -29,10 +33,15 @@ namespace NclearOS2.GUI
         public static Bitmap lockicon;
         public static Bitmap connected;
     }
-    public class Images
+    public static class Images
     {
         //wallpapers
+        public static Bitmap systemWallpaper { get; private set; }
         public static Bitmap wallpaper;
         public static Bitmap wallpaperBlur;
+        public static void RequestSystemWallpaperChange(Bitmap bitmap)
+        {
+            systemWallpaper = bitmap;
+        }
     }
 }

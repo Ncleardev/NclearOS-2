@@ -23,7 +23,7 @@ namespace NclearOS2
         public static string GetInfo()
         {
             if (!Kernel.useNetwork) { Start(); }
-            return "IP Address: " + NetworkConfiguration.CurrentAddress.ToString();
+            return "Local IP Address: " + NetworkConfiguration.CurrentAddress.ToString();
         }
     }
 }
@@ -31,16 +31,21 @@ namespace NclearOS2.GUI
 {
     internal class Net : Process
     {
-        public Net() : base("Network Service", Priority.Low) { }
+        public Net() : base("Network Service", ProcessManager.Priority.None) { }
         internal override int Start()
         {
+            if (NetworkConfiguration.CurrentAddress != null)
+            {
+                Kernel.useNetwork = true;
+                Notify("Connected to Network", Icons.info);
+            }
             return 0;
         }
         internal override void Update()
         {
-            Kernel.useNetwork = NetworkConfiguration.CurrentAddress != null;
+            //Kernel.useNetwork = NetworkConfiguration.CurrentAddress != null;
         }
-        internal override int Stop() { Kernel.useNetwork = false; return 0; }
+        internal override int Stop(bool f) { Kernel.useNetwork = false; return 0; }
     }
 }
 namespace NclearOS2.Commands
@@ -55,12 +60,12 @@ namespace NclearOS2.Commands
             })
         {
         }
-        internal override int Execute(string[] args, CommandShell shell)
+        internal override int Execute(string[] args, CommandShell shell, string rawInput)
         {
             switch (args[0])
             {
                 case "net":
-                    shell.print = Net.GetInfo();
+                    shell.Print = Net.GetInfo();
                     return 0;
             }
             return 1;

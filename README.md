@@ -20,17 +20,18 @@
 ### Features
 - User-friendly graphical user interface
 - Multitasking
+- Animations
 - Powerful Command System
 - Filesystem
 - Text editor
 - Blur effects
 - Personalization
 - Text (Console) Mode
-- Performance Watchdog
 - Screensaver
 - Advanced startup options and safe mode
 
 ### Screenshots
+![Screenshot](/Screenshots/main.png)
 ![Screenshot](/Screenshots/1.png)
 ![Screenshot](/Screenshots/2.png)
 ![Screenshot](/Screenshots/3.png)

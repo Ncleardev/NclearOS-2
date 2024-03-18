@@ -380,7 +380,7 @@ namespace NclearOS2.Commands
                     return 0;
                 case "mkdir":
                     if (char.IsDigit(args[1][0]) && args[1].Contains(':')) { FileManager.NewFolder(args[1]); }
-                    else { FileManager.NewFolder(path + "\\" args[1]); }
+                    else { FileManager.NewFolder(path + "\\" + args[1]); }
                     return 0;
                 case "cat":
                     if (args[1].Contains('\\')) { shell.Print = FileManager.Open(args[1]); }

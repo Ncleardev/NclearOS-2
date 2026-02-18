@@ -25,9 +25,11 @@ namespace NclearOS2.GUI
         private static short frames;
         private static bool displayFPS = true;
 
+        //public static int targetFPS = -1;
+
         public static bool Lock = true;
         public static bool screenSaver;
-        
+
         //private static bool OneClick;
         public static bool Pressed;
         public static bool LongPress;
@@ -54,7 +56,7 @@ namespace NclearOS2.GUI
         public static Pen SystemPen = BluePen;
 
         public static PCScreenFont font;
-        private static Menu menu;
+        internal static Menu menu;
         private static GlobalInput globalInput;
         internal static Process screenSaverProcess;
 
@@ -69,7 +71,7 @@ namespace NclearOS2.GUI
                 DisplayCursor = false;
                 if (overrideRes != null) { DisplayMode = ResParse(overrideRes); }
                 else if (Kernel.safeMode) { DisplayMode = new(800, 600, ColorDepth.ColorDepth32); }
-                else if (Kernel.useDisks) { DisplayMode = Profiles.LoadSystem(); }
+                else if (Kernel.useDisks) { DisplayMode = Profiles.Load(); }
                 SetRes(DisplayMode, true, true, customCanvas);
                 //if (!Kernel.safeMode) { canvas.DrawImage(new Bitmap(Resources.Wallpaper), 0, 0); canvas.DrawFilledRectangle(DarkPen, ((int)(GUI.ScreenX - "Starting NclearOS".Length * 8) / 2) - 10, (int)(GUI.ScreenY - 12) / 2, "Starting NclearOS".Length * 8 + 20, 24); }
                 //canvas.DrawString("NclearOS", font, new Pen(Color.LimeGreen), (int)(GUI.ScreenX - "NclearOS".Length * font.Width) / 2, (int)(GUI.ScreenY - font.Height * 2) / 2);
@@ -87,9 +89,8 @@ namespace NclearOS2.GUI
                 {
                     //Toast.Display("Loading user settings...");
                     //canvas.Display();
-                    Profiles.LoadUser();
                     Settings.LoadWallpaper();
-                    if(Sysinfo.InstalledRAM < 120) { blurEffects = false; }
+                    if (Sysinfo.InstalledRAM < 120) { blurEffects = false; }
                 }
                 else
                 {
@@ -97,16 +98,16 @@ namespace NclearOS2.GUI
                     animationEffects = false;
                     Bitmap wallpaper = new(1, 1, DisplayMode.ColorDepth);
                     MemoryOperations.Fill(wallpaper.rawData, Color.CadetBlue.ToArgb());
-                    Images.RequestSystemWallpaperChange(wallpaper);
+                    Images.systemWallpaper = wallpaper;
                 }
                 ApplyRes();
                 globalInput = new();
                 if (!Kernel.safeMode)
                 {
                     screenSaverProcess = ProcessManager.Run(new ScreenSaverService());
-                    ProcessManager.Run(new PerformanceWatchdog());
                     NclearOS2.Net.Start();
                 }
+                ProcessManager.Run(new PerformanceWatchdog());
                 if (Kernel.Debug) { ProcessManager.Run(new InfoDisplay()); }
                 DisplayCursor = true;
                 return "OK";
@@ -120,6 +121,7 @@ namespace NclearOS2.GUI
         }
         public static void Refresh()
         {
+            ulong _startTick = CPU.GetCPUUptime();
             if (fps2 != RTC.Second)
             {
                 fps = frames;
@@ -141,29 +143,29 @@ namespace NclearOS2.GUI
                 {
                     Pressed = true;
                     LongPress = false;
-                    if (!screenSaver && !Lock && MouseManager.Y < ScreenY-30)
+                    if (!screenSaver && !Lock && MouseManager.Y < ScreenY - 30)
                     {
-                        if(!ProcessManager.Click((int)MouseManager.X, (int)MouseManager.Y)) { Desktop.Click((int)MouseManager.X, (int)MouseManager.Y); }
+                        if (!ProcessManager.Click((int)MouseManager.X, (int)MouseManager.Y)) { Desktop.Click((int)MouseManager.X, (int)MouseManager.Y); }
                     }
                 }
             }
 
             if (screenSaver) { ScreenSaver.Update(); }
-            else if (Lock) { LockScreen.Update(); }
+            else if (Lock) { LockScreen.Update();  }
             else
             {
                 Desktop.Update();
                 globalInput.Update();
                 ProcessManager.Refresh();
-                if (!screenSaver && !Lock && MouseManager.Y < ScreenY - 30) { ProcessManager.Hover((int)MouseManager.X, (int)MouseManager.Y); }
-                Animation.Update();
+                if (MouseManager.Y < ScreenY - 30) { ProcessManager.Hover((int)MouseManager.X, (int)MouseManager.Y); }
+                Animation2.Update();
                 menu.Update();
             }
 
             Toast.Update();
-            
+
             if (Kernel.Debug) { GUI.canvas.DrawImage(InfoDisplay.display, 0, 0); }
-            
+
             if (DisplayCursor) { if (Loading) { canvas.DrawImageAlpha(Icons.cursorload, (int)MouseManager.X, (int)MouseManager.Y); } else { canvas.DrawImageAlpha(Icons.cursor, (int)MouseManager.X, (int)MouseManager.Y); } }
 
             if (displayFPS)
@@ -173,6 +175,20 @@ namespace NclearOS2.GUI
             }
             Heap.Collect();
             canvas.Display();
+            /*if (targetFPS > 0)
+            {
+                ulong _endTick = CPU.GetCPUUptime();
+                double frameTime = (double)(_endTick - _startTick) / 3200000000.0;
+                double targetFrameDuration = 1.0 / targetFPS;
+                if (frameTime < targetFrameDuration)
+                {
+                    int sleepTime = (int)((targetFrameDuration - frameTime) * 1000);
+                    if (sleepTime > 0)
+                    {
+                        Thread.Sleep(sleepTime);
+                    }
+                }
+            }*/
         }
         public static void Wait()
         {
@@ -195,7 +211,7 @@ namespace NclearOS2.GUI
                         else { Kernel.Shutdown(restart, 1); }
                     } ))
                 });
-                
+
                 Toast.Msg = null;
                 return false;
             }
@@ -258,16 +274,20 @@ namespace NclearOS2.GUI
         }
         public static void ApplyRes()
         {
-            if(GUI.ScreenX * GUI.ScreenY > Sysinfo.AvailableRAM * 31000) { throw new Exception("Not enough system memory to complete desktop environment initialization!");  }
-            
+            if (GUI.ScreenX * GUI.ScreenY > Sysinfo.AvailableRAM * 31000) { throw new Exception("Not enough system memory to complete desktop environment initialization!"); }
+
             Images.wallpaper = new((uint)GUI.ScreenX, (uint)GUI.ScreenY, DisplayMode.ColorDepth)
             { rawData = PostProcess.ResizeBitmap(Images.systemWallpaper, (uint)GUI.ScreenX, (uint)GUI.ScreenY) };
 
             Images.wallpaperBlur = new((uint)GUI.ScreenX, (uint)GUI.ScreenY, DisplayMode.ColorDepth);
+            Images.wallpaperDark = new((uint)GUI.ScreenX, (uint)GUI.ScreenY, DisplayMode.ColorDepth);
             if (blurEffects)
             { Images.wallpaperBlur.rawData = PostProcess.ResizeBitmap(PostProcess.DarkenBitmap(PostProcess.ApplyBlur(PostProcess.ResizeBitmap(Images.systemWallpaper, 640, 360), 20), 0.5f), 640, 360, (uint)GUI.ScreenX, (uint)GUI.ScreenY); }
             else
             { Images.wallpaperBlur.rawData = PostProcess.DarkenBitmap(PostProcess.ResizeBitmap(Images.systemWallpaper, (uint)GUI.ScreenX, (uint)GUI.ScreenY), 0.5f); }
+
+            MemoryOperations.Copy(Images.wallpaperDark.rawData, Images.wallpaperBlur.rawData);
+            Images.wallpaperDark.rawData = PostProcess.DarkenBitmap(Images.wallpaperDark.rawData, 0.5f);
 
             menu = new();
             for (int i = 0; i < ProcessManager.running.Count; i++)
@@ -330,7 +350,7 @@ namespace NclearOS2.GUI
 
         public static int[] ResizeBitmap(Bitmap bmp, uint nX, uint nY, bool check = false)
         {
-            if(check && bmp.Width == nX && bmp.Height == nY) { return bmp.rawData; }
+            if (check && bmp.Width == nX && bmp.Height == nY) { return bmp.rawData; }
             int[] result = new int[nX * nY];
             if (bmp.Width == nX && bmp.Height == nY) { result = bmp.rawData; return result; }
 
@@ -365,7 +385,10 @@ namespace NclearOS2.GUI
             {
                 for (int col = 0; col < width; col++)
                 {
-                    croppedBitmap.rawData[row * width + col] = bitmap.rawData[(y + row) * bitmap.Width + (x + col)];
+                    croppedBitmap.rawData[row * width + col] =
+                    (x + col >= 0 && x + col < bitmap.Width && y + row >= 0 && y + row < bitmap.Height)
+                    ? bitmap.rawData[(y + row) * bitmap.Width + (x + col)] : 0;
+                    //croppedBitmap.rawData[row * width + col] = bitmap.rawData[(y + row) * bitmap.Width + (x + col)];
                 }
             }
             return croppedBitmap;
@@ -600,7 +623,7 @@ namespace NclearOS2.GUI
             {
                 //if (y2 + Font.fontY > y) { return; }
                 if (c == '\n') { y2 += 20; x2 = ogX; continue; }
-                if(DrawChar(c, color, bitmap, canvasWidth, x2, y2)) { y2 += 14; x2 = ogX; continue; }
+                if (DrawChar(c, color, bitmap, canvasWidth, x2, y2)) { y2 += 14; x2 = ogX; continue; }
                 x2 += Font.fontX;
             }
         }

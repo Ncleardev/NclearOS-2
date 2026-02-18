@@ -7,12 +7,26 @@ namespace NclearOS2.GUI
     {
         private static bool Menu;
         private static char second10;
+
+        private static void Unlock()
+        {
+            Menu = false;
+            GUI.Lock = false;
+
+            var anim = Animation2.Animate(Images.wallpaperBlur)
+                .StartAt(0, 0)
+                .MoveTo(0, GUI.ScreenY - 30);
+            Animation2.Queue.Insert(0, anim);
+        }
+
         public static void Update()
         {
             if (KeyboardManager.TryReadKey(out KeyEvent keyEvent))
             {
                 if (keyEvent.Key == ConsoleKeyEx.Delete && KeyboardManager.ControlPressed && KeyboardManager.AltPressed) { Cosmos.System.Power.Reboot(); }
-                else if (keyEvent.Key == ConsoleKeyEx.Spacebar) { GUI.Lock = false; Animation.Queue.Insert(0, new Animator(Images.wallpaperBlur, Animation.Property.TranslationY, (short)GUI.ScreenY, 0, 200));}
+                else if (keyEvent.Key == ConsoleKeyEx.Spacebar) {
+                    Unlock();
+                }
                 GUI.wasClicked = true;
             }
             if (GUI.Pressed)
@@ -40,9 +54,7 @@ namespace NclearOS2.GUI
                     }
                     else
                     {
-                        Menu = false;
-                        GUI.Lock = false;
-                        Animation.Queue.Insert(0, new Animator(Images.wallpaperBlur, Animation.Property.TranslationY, (short)GUI.ScreenY, 0, 100));
+                        Unlock();
                     }
                 }
             }

@@ -40,6 +40,9 @@ namespace NclearOS2.GUI
         internal bool minimized = true;
         internal Bitmap appCanvas;
         internal Bitmap borderCanvas;
+        internal Bitmap bottomBorderCanvas;
+        internal Pen leftBorder = GUI.SystemPen;
+        internal Pen rightBorder = GUI.SystemPen;
         internal Action<int, int> OnClicked;
         internal Action<int, int> OnHover;
         internal Action<int, int> OnLongPressed;
@@ -73,13 +76,13 @@ namespace NclearOS2.GUI
             }
             return x2 > canvasWidth - fontX * 2;
         }
-        public void DrawCharAlpha(char c, int color, int[] canvas, int canvasWidth, int x2, int y2)
+        public bool DrawCharAlpha(char c, int color, int[] canvas, int canvasWidth, int x2, int y2)
         {
             int fontY = Font.fontY;
             int fontX = Font.fontX;
             if (c == ' ')
             {
-                return;
+                return x2 > canvasWidth - fontX * 2;
             }
             bool[] cache = Font.charCache[c];
             for (int py = 0; py < fontY; py++)
@@ -92,6 +95,7 @@ namespace NclearOS2.GUI
                     }
                 }
             }
+            return x2 > canvasWidth - fontX * 2;
         }
         public void DrawString(string str, int color, int bg, int x2, int y2)
         {
@@ -100,7 +104,7 @@ namespace NclearOS2.GUI
             {
                 if (y2 + Font.fontY > y) { return; }
                 if (c == '\n') { y2 += 20; x2 = ogX; continue; }
-                if(DrawChar(c, color, bg, appCanvas.rawData, x, x2, y2)) { y2 += 14; x2 = ogX; continue; }
+                if (DrawChar(c, color, bg, appCanvas.rawData, x, x2, y2)) { y2 += 14; x2 = ogX; continue; }
                 x2 += Font.fontX;
             }
         }
@@ -109,8 +113,9 @@ namespace NclearOS2.GUI
             int ogX = x2;
             foreach (char c in str)
             {
+                if (y2 + Font.fontY > y) { return; }
                 if (c == '\n') { y2 += 20; x2 = ogX; continue; }
-                DrawCharAlpha(c, color, appCanvas.rawData, x, x2, y2);
+                if (DrawCharAlpha(c, color, appCanvas.rawData, x, x2, y2)) { y2 += 14; x2 = ogX; continue; }
                 x2 += Font.fontX;
             }
         }
@@ -185,8 +190,20 @@ namespace NclearOS2.GUI
         }
         public void RefreshBorder(bool effects = true)
         {
-            if (effects) { borderCanvas = PostProcess.CropBitmap(Images.wallpaperBlur, StartX, StartY, x, 30); }
-            else { MemoryOperations.Fill(borderCanvas.rawData, 0); }
+            if (effects && !Kernel.safeMode) {
+                borderCanvas = PostProcess.CropBitmap(Images.wallpaperBlur, StartX, StartY, x, 30);
+                bottomBorderCanvas = PostProcess.CropBitmap(borderCanvas, 0, (int)borderCanvas.Height - 3, (int)borderCanvas.Width, 3);
+                leftBorder = new(Color.FromArgb(borderCanvas.rawData[borderCanvas.rawData.Length - borderCanvas.Width]));
+                rightBorder = new(Color.FromArgb(borderCanvas.rawData[borderCanvas.rawData.Length - 1]));
+            }
+            else {
+                if (borderCanvas == null) { borderCanvas = new Bitmap((uint)x, 30, GUI.DisplayMode.ColorDepth); }
+                if (bottomBorderCanvas == null) { bottomBorderCanvas = new Bitmap((uint)x, 3, GUI.DisplayMode.ColorDepth); }
+                MemoryOperations.Fill(borderCanvas.rawData, GUI.SystemPen.ValueARGB);
+                MemoryOperations.Fill(bottomBorderCanvas.rawData, GUI.SystemPen.ValueARGB);
+                leftBorder = GUI.SystemPen;
+                rightBorder = GUI.SystemPen;
+            }
             
             if(ID == 0) { Font.DrawString(name, Color.White.ToArgb(), 36, 10, borderCanvas.rawData, x); }
             else { Font.DrawString(name, Color.Gray.ToArgb(), 36, 10, borderCanvas.rawData, x); }
@@ -261,11 +278,18 @@ namespace NclearOS2.GUI
         }
         public void Minimize()
         {
-            if (!minimized) { minimized = true; Animation.Running.Add(new Animator(50, borderCanvas, (short)(ID * 40 + 50), (short)(GUI.ScreenY - 30), (short)StartX, (short)StartY)); Animation.Running.Add(new Animator(50, appCanvas, (short)(ID * 40 + 50), (short)(GUI.ScreenY), (short)StartX, (short)(StartY + 30))); }
+            if (!minimized) {
+                minimized = true;
+                Animation2.Animate(borderCanvas).SetDuration(150).StartAt(StartX, StartY).MoveTo(ID * 40 + 50, GUI.ScreenY - 30).SetInterpolator(Animator2.InterpolationMode.EaseIn).Start();
+                Animation2.Animate(appCanvas).SetDuration(150).StartAt(StartX, StartY + 30).MoveTo(ID * 40 + 50, GUI.ScreenY).SetInterpolator(Animator2.InterpolationMode.EaseIn).Start();
+            }
         }
         public void Unminimize()
         {
-            if (minimized) { Animation.Running.Add(new Animator(50, borderCanvas, (short)StartX, (short)StartY, (short)(ID * 40 + 50), (short)(GUI.ScreenY - 30), new(() => { minimized = false; WindowManager.Draw(this); }))); Animation.Running.Add(new Animator(50, appCanvas, (short)StartX, (short)(StartY + 30), (short)(ID * 40 + 50), (short)(GUI.ScreenY))); }
+            if (minimized) {
+                Animation2.Animate(borderCanvas).SetDuration(200).MoveTo(StartX, StartY).StartAt(ID * 40 + 50, GUI.ScreenY - 30).WithEndAction(() => { minimized = false; WindowManager.Draw(this); }).Start();
+                Animation2.Animate(appCanvas).SetDuration(200).MoveTo(StartX, StartY + 30).StartAt(ID * 40 + 50, GUI.ScreenY).Start();
+            }
         }
         public void NewSize(int nX, int nY)
         {

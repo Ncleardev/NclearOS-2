@@ -8,7 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
-using System.Threading;
+
 
 namespace NclearOS2.GUI
 {
@@ -87,7 +87,7 @@ namespace NclearOS2.GUI
             if (code == -1) { GUI.Loading = false; return null; }
             else if (code != 0) { Msg.Main("Process Manager", "Process '" + process.name + " launched and then stopped with an unexpected error code: " + code, Icons.warn); GUI.Loading = false; return null; }
 
-            process.usageRAM = (GCImplementation.GetUsedRAM() - j) / 1024;
+            process.usageRAM = GCImplementation.GetUsedRAM() - j;
             GUI.Refresh();
             j = GCImplementation.GetUsedRAM();
 
@@ -95,7 +95,7 @@ namespace NclearOS2.GUI
             WindowManager.FocusAtWindow(0);
 
             GUI.Loading = false;
-            process.usageRAM += (GCImplementation.GetUsedRAM() - j) / 1024;
+            process.usageRAM += GCImplementation.GetUsedRAM() - j;
             return process;
         }
         internal static int RemoveAt(int i, bool force = false)
@@ -103,7 +103,10 @@ namespace NclearOS2.GUI
             GUI.Loading = true;
             if (force) { running.RemoveAt(i); GUI.Refresh(); GUI.Loading = false; return 0; }
             int exitCode = running[i].Stop(force);
-            if (exitCode == 0) { if (running[i] is Window w) { Animation.Running.Add(new((short)w.StartX, (short)(w.StartY), w.borderCanvas, 50)); } running.RemoveAt(i); } //Animation.Running.Add(new(w.appCanvas, PostProcess.CropBitmap(Images.wallpaperBlur, w.StartX, w.StartY + 30, w.x, w.y), (short)w.StartX, (short)(w.StartY+30), 50));
+            if (exitCode == 0) {
+                if (running[i] is Window w) Animation2.Animate(w.borderCanvas).StartAt(w.StartX, w.StartY).Darken().SetDuration(100).Start();
+                running.RemoveAt(i);
+            } //Animation.Running.Add(new(w.appCanvas, PostProcess.CropBitmap(Images.wallpaperBlur, w.StartX, w.StartY + 30, w.x, w.y), (short)w.StartX, (short)(w.StartY+30), 50));
             else if (exitCode != 1)
             {
                 //if (exitCode == -1) { if (Run(running[i]) != null) { NotificationSystem.Notify("Process Manager", "System Process '" + running[i + 1] + "' crashed and successfully recovered."); running.RemoveAt(i + 1); } else { NotificationSystem.Notify("Process Manager", "System Process '" + running[i + 1] + "' crashed and unsuccessfully recovered. Reboot recommended."); } running.RemoveAt(i + 1); }
@@ -139,23 +142,40 @@ namespace NclearOS2.GUI
         }
         public static bool Click(int x, int y)
         {
-            if (hoveredOn != null) { hoveredOn.Click(x, y); return true; }
+            if (hoveredOn != null)
+            {
+                uint j = GCImplementation.GetUsedRAM();
+                hoveredOn.Click(x, y);
+                hoveredOn.usageRAM += GCImplementation.GetUsedRAM() - j;
+                return true;
+            }
             return false;
         }
-
         public static void LongPress(int x, int y)
         {
-            hoveredOn?.LongPress(x, y);
+            if (hoveredOn != null)
+            {
+                uint j = GCImplementation.GetUsedRAM();
+                hoveredOn.LongPress(x, y);
+                hoveredOn.usageRAM += GCImplementation.GetUsedRAM() - j;
+            }
         }
         public static void Hover(int x, int y)
         {
-            hoveredOn?.Hover(x, y);
+            if (hoveredOn != null)
+            {
+                uint j = GCImplementation.GetUsedRAM();
+                hoveredOn.Hover(x, y);
+                hoveredOn.usageRAM += GCImplementation.GetUsedRAM() - j;
+            }
         }
         public static void Key(KeyEvent keyEvent)
         {
             if (running[0] is Window w)
             {
+                uint j = GCImplementation.GetUsedRAM();
                 w.OnKey(keyEvent);
+                w.usageRAM += GCImplementation.GetUsedRAM() - j;
             }
         }
         public static string GetPriority(int id)
@@ -180,6 +200,8 @@ namespace NclearOS2.GUI
         }
         internal static void Draw(Window w)
         {
+            uint j = GCImplementation.GetUsedRAM();
+            
             if (w.windowlock)
             {
                 if (GUI.LongPress)
@@ -204,11 +226,21 @@ namespace NclearOS2.GUI
                 GUI.canvas.DrawImage(res, w.StartX, w.StartY + 30);
             }
             else { GUI.canvas.DrawImage(w.appCanvas, w.StartX, w.StartY + 30); }
+
+
+            GUI.canvas.DrawFilledRectangle(w.leftBorder, w.StartX, w.StartY + 30, 3, w.y); //left
+            GUI.canvas.DrawFilledRectangle(w.rightBorder, w.StartX + w.x - 3, w.StartY + 30, 3, w.y); //right)
+            
+            GUI.canvas.DrawImage(w.bottomBorderCanvas, w.StartX, w.StartY + w.y + 27); //bottom
+
+            w.usageRAM += GCImplementation.GetUsedRAM() - j;
         }
         public static void FocusAtWindow(int id)
         {
             if (ProcessManager.running[id] is Window w2)
             {
+                uint j = GCImplementation.GetUsedRAM();
+                
                 for (int i = ProcessManager.running.Count - 1; i > 0; i--)
                 {
                     if (i <= id) { ProcessManager.running[i] = ProcessManager.running[i - 1]; }
@@ -218,6 +250,8 @@ namespace NclearOS2.GUI
                 ProcessManager.running[0] = w2;
                 Font.DrawString(w2.name, Color.White.ToArgb(), 36, 10, w2.borderCanvas.rawData, w2.x);
                 w2.Unminimize();
+
+                w2.usageRAM += GCImplementation.GetUsedRAM() - j;
             }
         }
     }
@@ -259,7 +293,7 @@ namespace NclearOS2.GUI
             DrawFilledRectangle(Color.DarkGray.ToArgb(), 0, y - 20, x, 20);
             if (ram > 100) { ram = 100; }
             DrawFilledRectangle(GUI.SystemPen.ValueARGB, 0, y - 20, ram * (x / 100), 20);
-            DrawStringAlpha("RAM: " + ram + "%", Color.White.ToArgb(), 10, y - 15);
+            DrawStringAlpha("RAM: " + ram + "%", Color.White.ToArgb(), 10, y - 17);
         }
 
         private void Print(Process task, int i)

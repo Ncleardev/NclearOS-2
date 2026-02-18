@@ -26,8 +26,7 @@ namespace NclearOS2.GUI
                     {
                         this.priority = ProcessManager.Priority.Realtime;
                         Notify("Over 90% of system memory is being used and the system may crash unexpectedly. Save all work in progress and restart the system.", Icons.warn); acknowledged2 = true;
-                        Images.wallpaper = new((uint)GUI.DisplayMode.Columns, (uint)GUI.DisplayMode.Rows, GUI.DisplayMode.ColorDepth);
-                        Images.wallpaperBlur = new((uint)GUI.DisplayMode.Columns, (uint)GUI.DisplayMode.Rows, GUI.DisplayMode.ColorDepth);
+                        Images.wallpaper = Images.wallpaperBlur = Images.wallpaperDark = new((uint)GUI.DisplayMode.Columns, (uint)GUI.DisplayMode.Rows, GUI.DisplayMode.ColorDepth);
                     }
                     if ((int)(NclearOS2.Sysinfo.UsedRAM / NclearOS2.Sysinfo.InstalledRAM * 100) > 94)
                     {

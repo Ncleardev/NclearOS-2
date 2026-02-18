@@ -11,7 +11,7 @@ namespace NclearOS2
 {
     public class Kernel : Sys.Kernel
     {
-        public static readonly string OSVERSION = "NclearOS 2 Version Alpha 0.6";
+        public static readonly string OSVERSION = "NclearOS 2 Version Alpha 0.6.1";
         public static readonly string OSNAME = "NclearOS 2";
         public static string PCNAME = "pc";
         public static readonly string MAINDISK = "0:\\";
@@ -29,7 +29,8 @@ namespace NclearOS2
 
         public static bool GUIenabled = false;
         public static bool useDisks = true;
-        public static bool useNetwork = false;
+        public static bool useNetwork = true;
+        public static bool networkConnected = false;
         public static bool safeMode = false;
 
         private static bool debug;

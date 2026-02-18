@@ -9,11 +9,35 @@ namespace NclearOS2.GUI
 {
     public static class Profiles
     {
-        public static Mode LoadSystem()
+        public static Mode Load()
         {
             try
             {
-                if (Kernel.useDisks && !Kernel.safeMode && System.IO.File.Exists(Kernel.SYSTEMCONFIG))
+                if (System.IO.File.Exists(Kernel.USERCONFIG))
+                {
+                    string[] lines = System.IO.File.ReadAllLines(Kernel.USERCONFIG);
+                    foreach (string line in lines)
+                    {
+                        if (line.Contains("WallpaperNum: "))
+                        {
+                            Settings.wallpapernum = Convert.ToInt32(line.Replace("WallpaperNum: ", "").Trim());
+                        }
+                        else if (line.Contains("CursorType: "))
+                        {
+                            if (line == "CursorType: 1") { Settings.cursorWhite = true; }
+                        }
+                        else if (line.Contains("ColorTheme: "))
+                        {
+                            if (line.Contains("MidnightBlue")) { GUI.SystemPen = GUI.DarkBluePen; }
+                            else if (line.Contains("Goldenrod")) { GUI.SystemPen = GUI.YellowPen; }
+                            else if (line.Contains("Green")) { GUI.SystemPen = GUI.GreenPen; }
+                            else if (line.Contains("DarkRed")) { GUI.SystemPen = GUI.RedPen; }
+                            else if (line.Contains("Black")) { GUI.SystemPen = GUI.DarkPen; }
+                            else if (line.Contains("R=40, G=40, B=40")) { GUI.SystemPen = GUI.DarkGrayPen; }
+                        }
+                    }
+                }
+                if (System.IO.File.Exists(Kernel.SYSTEMCONFIG))
                 {
                     string[] lines = System.IO.File.ReadAllLines(Kernel.SYSTEMCONFIG);
                     foreach (string line in lines)
@@ -27,50 +51,6 @@ namespace NclearOS2.GUI
             }
             catch { }
             return GUI.DisplayMode;
-        }
-
-        public static int LoadUser()
-        {
-            int i = 0;
-            try
-            {
-                if (Kernel.useDisks && !Kernel.safeMode && System.IO.File.Exists(Kernel.USERCONFIG))
-                {
-                    string[] lines = System.IO.File.ReadAllLines(Kernel.USERCONFIG);
-                    foreach (string line in lines)
-                    {
-                        if (line.Contains("WallpaperNum: "))
-                        {
-                            i = Convert.ToInt32(line.Replace("WallpaperNum: ", ""));
-                        }
-                        else if (line.Contains("CursorType: "))
-                        {
-                            if (line == "CursorType: 1")
-                            {
-                                Icons.cursor = new Bitmap(Resources.CursorWhite);
-                                Icons.cursorload = new Bitmap(Resources.CursorWhiteLoad);
-                                Settings.cursorWhite = true;
-                            }
-                        }
-                        else if (line.Contains("ColorTheme: "))
-                        {
-                            if (line.Contains("MidnightBlue")) { GUI.SystemPen = GUI.DarkBluePen; }
-                            else if (line.Contains("Goldenrod")) { GUI.SystemPen = GUI.YellowPen; }
-                            else if (line.Contains("Green")) { GUI.SystemPen = GUI.GreenPen; }
-                            else if (line.Contains("DarkRed")) { GUI.SystemPen = GUI.RedPen; }
-                            else if (line.Contains("Black")) { GUI.SystemPen = GUI.DarkPen; }
-                            else if (line.Contains("R=40, G=40, B=40")) { GUI.SystemPen = GUI.DarkGrayPen; }
-                        }
-                        else if (line.Contains("CursorSensivity: "))
-                        {
-                            MouseManager.MouseSensitivity = (float)Convert.ToInt32(line.Replace("CursorSensivity: ", "")) / 100;
-                        }
-                    }
-                }
-            }
-            catch (Exception e) { Toast.Force(e.Message); System.Console.ReadLine(); }
-            Settings.wallpapernum = i;
-            return i;
         }
         public static void Save()
         {

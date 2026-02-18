@@ -36,12 +36,9 @@ namespace NclearOS2.GUI
     public static class Images
     {
         //wallpapers
-        public static Bitmap systemWallpaper { get; private set; }
+        public static Bitmap systemWallpaper;
         public static Bitmap wallpaper;
         public static Bitmap wallpaperBlur;
-        public static void RequestSystemWallpaperChange(Bitmap bitmap)
-        {
-            systemWallpaper = bitmap;
-        }
+        public static Bitmap wallpaperDark;
     }
 }

@@ -20,6 +20,7 @@
         <Launch>ISO</Launch>
         <CompressionType>Gzip</CompressionType>
         <RemoveBootDebugOutput>True</RemoveBootDebugOutput>
+        <OptimizationLevel>0</OptimizationLevel>
     </PropertyGroup>
 
     <ItemGroup>

@@ -12,8 +12,16 @@ namespace NclearOS2.GUI
         static readonly Bitmap cursor1L = new(Resources.CursorLoad);
         public static readonly Bitmap cursor2 = new(Resources.CursorWhite);
         public static readonly Bitmap cursor2L = new(Resources.CursorWhiteLoad);
-
-        public static int wallpapernum = 0;
+        private static int _wallpapernum = 0;
+        public static int wallpapernum
+        {
+            get => _wallpapernum;
+            set
+            {
+                if (value < 0) _wallpapernum = 0;
+                else _wallpapernum = value % 6;
+            }
+        }
         public static bool cursorWhite = false;
 
         public Settings() : base("Settings", 300, 300, new Bitmap(Resources.Settings), ProcessManager.Priority.None) { OnMoved = Moved; OnStartMoving = StartMoving; OnClicked = Clicked; }
@@ -26,7 +34,6 @@ namespace NclearOS2.GUI
                 GUI.Loading = true;
                 Toast.Display("Please wait...");
                 GUI.canvas.Display();
-                if (wallpapernum > 4) { wallpapernum = -1; }
                 wallpapernum++;
                 LoadWallpaper();
                 double before = Sysinfo.UsedRAM;
@@ -37,7 +44,7 @@ namespace NclearOS2.GUI
                 //RefreshBorder();
                 GUI.Loading = false;
                 double end = Sysinfo.UsedRAM;
-                if (Kernel.Debug) { Notify("Before operation: " + beforebefore + "  Before ApplyRes: " + before + "  After ApplyRes: " + almost + "  After operation: " + end); }
+                if (Kernel.Debug) { Notify("Before operation: " + (int)beforebefore + "  Before ApplyRes: " + (int)before + "  After ApplyRes: " + (int)almost + "  After operation: " + (int)end); }
             }
             if (y2 > 105 && y2 < 135)
             {
@@ -89,7 +96,7 @@ namespace NclearOS2.GUI
         }
         public static void LoadWallpaper()
         {
-            Images.RequestSystemWallpaperChange(wallpapernum switch
+            Images.systemWallpaper = wallpapernum switch
             {
                 1 => new Bitmap(Resources.WallpaperOld),
                 2 => new Bitmap(Resources.WallpaperLock),
@@ -97,7 +104,7 @@ namespace NclearOS2.GUI
                 4 => new Bitmap(Resources.Wallpaper2005s),
                 5 => new Bitmap(Resources.WallpaperCosmos),
                 _ => new Bitmap(Resources.Wallpaper),
-            });
+            };
         }
     }
 }

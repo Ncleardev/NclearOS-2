@@ -98,13 +98,13 @@ namespace NclearOS2.Commands
         internal SystemInfo() : base
             ("System Info", "Provides info about system",
             new Command[] {
-            new Command(new string[] { "sysinfo", "systeminfo", "sys", "system"}, "Display info about system")
+            new Command(new string[] { "systeminfo", "system"}, "Display info about system")
             })
         {
         }
-        internal override int Execute(string[] args, CommandShell shell, string rawInput)
+        internal override int Execute(string[] args, string rawInput, CommandShell shell)
         {
-            if (args[0] == "sysinfo" || args[0] == "systeminfo" || args[0] == "sys" || args[0] == "system")
+            if (args[0] == "systeminfo" || args[0] == "system")
             {
                 shell.Print = NclearOS2.Sysinfo.Main() + "\n" + NclearOS2.Sysinfo.Ram();
                 return 0;

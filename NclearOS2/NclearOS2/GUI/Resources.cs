@@ -111,8 +111,16 @@ namespace NclearOS2.GUI
         public static void InitResources()
         {
             //Cursors
-            Icons.cursor = new Bitmap(Cursor);
-            Icons.cursorload = new Bitmap(CursorLoad);
+            if (NclearOS2.GUI.Settings.cursorWhite)
+            {
+                Icons.cursor = new Bitmap(CursorWhite);
+                Icons.cursorload = new Bitmap(CursorWhiteLoad);
+            }
+            else
+            {
+                Icons.cursor = new Bitmap(Cursor);
+                Icons.cursorload = new Bitmap(CursorLoad);
+            }
             //UI
             Icons.warn = new Bitmap(Warn);
             Icons.info = new Bitmap(Info);

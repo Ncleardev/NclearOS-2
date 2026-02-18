@@ -137,10 +137,25 @@ namespace NclearOS2.GUI
                 if (icon == null) { Font.DrawString(title, Color.White.ToArgb(), 10, 10, bitmap.rawData, 500); }
                 else { Font.DrawImageAlpha(icon, 10, 5, bitmap.rawData, 500); Font.DrawString(title, Color.White.ToArgb(), 20 + (int)icon.Width, 10, bitmap.rawData, 500); }
                 Font.DrawString(text, Color.White.ToArgb(), 10, 35, bitmap.rawData, 500);
-                Animation.Queue.Add(new Animator(bitmap, Animation.Property.TranslationY, (short)(GUI.ScreenY - 140), (short)(GUI.ScreenY), 100, (short)(GUI.ScreenX - 510)));
-                Animation.Queue.Add(new Animator((short)(GUI.ScreenX - 510), (short)(GUI.ScreenY - 140), 20, bitmap));
-                Animation.Queue.Add(new Animator(bitmap, Animation.Property.TranslationY, (short)(GUI.ScreenY), (short)(GUI.ScreenY - 140), 100, (short)(GUI.ScreenX - 510)));
-                //Animation.Queue.Add(new Animator(Animation.Property.ScaleX, (short)(GUI.ScreenX - 510), (short)(GUI.ScreenY - 140), 100, true, bitmap));
+                int xFixed = (int)GUI.ScreenX - 510;
+                int yHidden = (int)GUI.ScreenY;
+                int yVisible = (int)GUI.ScreenY - 140;
+                Animation2.Animate(bitmap)
+                    .StartAt(xFixed, yHidden)
+                    .MoveTo(xFixed, yVisible)
+                    .SetDuration(200)
+                    .Queue();
+                Animation2.Animate(bitmap)
+                    .StartAt(xFixed, yVisible)
+                    .MoveTo(xFixed, yVisible)
+                    .SetDuration(3000)
+                    .Queue();
+                Animation2.Animate(bitmap)
+                    .StartAt(xFixed, yVisible)
+                    .MoveTo(xFixed, yHidden)
+                    .SetDuration(150)
+                    .SetInterpolator(Animator2.InterpolationMode.EaseIn)
+                    .Queue();
             }
             else
             {

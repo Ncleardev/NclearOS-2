@@ -19,7 +19,7 @@ namespace NclearOS2.Commands
         internal string description;
         internal Command[] commands;
 
-        internal abstract int Execute(string[] args, CommandShell shell = null, string rawInput = ""); // returns 0 - OK; returns 1 - command not found in CommandTree, returns other number - error executing command
+        internal abstract int Execute(string[] args, string rawInput, CommandShell shell = null); // returns 0 - OK; returns 1 - command not found in CommandTree, returns 2 - wrong parameters, returns other number - error executing command
     }
     internal class Command
     {
@@ -53,7 +53,7 @@ namespace NclearOS2.Commands
             string[] args = command.Split(' ', StringSplitOptions.RemoveEmptyEntries);
             CommandsTree tree = GetTree(args[0]);
             if (tree == null) { return 1; }
-            return tree.Execute(args, null, command);
+            return tree.Execute(args, command, null);
         }
         internal static CommandsTree GetTree(string text)
         {
@@ -97,8 +97,8 @@ namespace NclearOS2.Commands
         private string result;
         internal Action update;
         internal Action crashClient;
-        internal Action crashShell;
         internal Action clearScreen;
+        internal Action exit;
         public string Print
         {
             get { return result; }
@@ -115,16 +115,14 @@ namespace NclearOS2.Commands
             CommandsTree tree = CommandManager.GetTree(args[0]);
             if (tree == null) { Print = "Unknown command '" + args[0] + "', type help for list of commands."; return 1; }
 
-            try { return tree.Execute(args, this, command); }
+            try { return tree.Execute(args, command, this); }
             catch (Exception e)
             {
+                if (e.Message == "system/Crash_Console_Shell") { throw new Exception("Manual crash"); }
                 Print = "[command '" + args[0] + "' crashed: " + e + "]";
             }
+            
             return -1;
-        }
-        public void CrashShell()
-        {
-            //throw new Exception("Manual crash");
         }
     }
     internal class Example : CommandsTree
@@ -137,7 +135,7 @@ namespace NclearOS2.Commands
             })
         {
         }
-        internal override int Execute(string[] args, CommandShell shell, string rawInput)
+        internal override int Execute(string[] args, string rawInput, CommandShell shell)
         {
             switch (args[0])
             {
@@ -174,12 +172,14 @@ namespace NclearOS2.Commands
             new Command(new string[] { "echo"}, "Displays a message."),
             new Command(new string[] { "beep"}, "Plays the sound of a beep through the PC Speaker.", new string[] { "[frequency/duration(ms)] - play a custom beep"}),
             new Command(new string[] { "prompt"}, "Allows to change displayed command prompt.", new string[] { "[text] - specifies the text of the command prompt; if empty sets prompt back to system default"}),
-            new Command(new string[] { "setres"}, "Allows to change display resolution.", new string[] { "/r [resolution] - WIDTHxHEIGHT or WIDTHxHEIGHT@COLORDEPTH or leave empty to see the list of available resolutions"}),//, "/c [canvas type] - SVGAII / VBE / VGA"}),
-            new Command(new string[] { "exit"}, "Switch beetween GUI and Text mode.")
+            new Command(new string[] { "setres"}, "Allows to change display resolution.", new string[] { "[resolution] - WIDTHxHEIGHT or WIDTHxHEIGHT@COLORDEPTH or leave empty to see the list of available resolutions"}),//, "/c [canvas type] - SVGAII / VBE / VGA"}),
+            //new Command(new string[] { "fps"}, "Allows to change FPS lock.", new string[] { "[fps] - fps value or leave empty to uncap"}),
+            new Command(new string[] { "switch"}, "Switch beetween GUI and Text mode."),
+            new Command(new string[] { "exit"}, "Closes the Console.")
             })
         {
         }
-        internal override int Execute(string[] args, CommandShell shell, string rawInput)
+        internal override int Execute(string[] args, string rawInput, CommandShell shell)
         {
             switch (args[0])
             {
@@ -288,38 +288,41 @@ namespace NclearOS2.Commands
                     }
                     else
                     {
-                        string res = null;
+                        /*string res = null;
                         string canvas = null;
-
                         for (int i = 0; i < args.Length; i++)
                         {
                             if (args[i] == "/r") { res = args[i + 1]; }
                             if (args[i] == "/c") { try { canvas = args[i + 1]; } catch { canvas = ""; }  }//canvas = args?[i + 1] ?? "";
                         }
-
-                        if (res != null)
+						
+						if (res != null)
                         {
-                            Mode mode = GUI.GUI.ResParse(res);
-                            try
-                            {
-                                if (Kernel.GUIenabled) { shell.Print = GUI.GUI.SetRes(GUI.GUI.ResParse(res), false, false, canvas); }
-                                else { shell.Print = GUI.GUI.Init(res, canvas); }
-                            }
-                            catch (Exception e)
-                            {
-                                if (!string.IsNullOrEmpty(canvas)) { canvas += " Canvas: "; }
-                                throw new Exception(canvas + "Resolution " + mode.Columns + "x" + mode.Rows + " is not available; " + e);
-                            }
-
                         }
                         else if (canvas != null)
                         {
                             try { GUI.GUI.SetCanvas(canvas); }
                             catch (Exception e) { throw new Exception(canvas + " canvas is not available; " + e); }
+                        }*/
+						
+						string res = args[1];
+						
+						Mode mode = GUI.GUI.ResParse(res);
+                        try {
+                            if (Kernel.GUIenabled) { shell.Print = GUI.GUI.SetRes(mode, false, false); }
+                            else { shell.Print = GUI.GUI.Init(res); }
+                        }
+                        catch (Exception e) {
+                            //if (!string.IsNullOrEmpty(canvas)) { canvas += " Canvas: "; }
+                            throw new Exception("Resolution " + mode.Columns + "x" + mode.Rows + " is not available; " + e);
                         }
                     }
                     return 0;
-                case "exit":
+                /*case "fps":
+                    if (args.Length == 1) { GUI.GUI.targetFPS = -1; shell.Print = "FPS uncapped."; }
+                    else { GUI.GUI.targetFPS = int.Parse(args[1]); shell.Print = "FPS capped to " + args[1] + "."; }
+                    return 0;*/
+                case "switch":
                     if (Kernel.GUIenabled)
                     {
                         shell.Print = "Shutting down GUI...";
@@ -329,6 +332,10 @@ namespace NclearOS2.Commands
                     {
                         shell.Print = GUI.GUI.Init();
                     }
+                    return 0;
+                case "exit":
+                    shell.exit?.Invoke();
+                    shell.Print = "If you are seeing this, Console Shell client does not include exit function.";
                     return 0;
             }
             return 1;
@@ -344,7 +351,7 @@ namespace NclearOS2.Commands
             })
         {
         }
-        internal override int Execute(string[] args, CommandShell shell, string rawInput)
+        internal override int Execute(string[] args, string rawInput, CommandShell shell)
         {
             switch (args[0])
             {
@@ -396,21 +403,18 @@ namespace NclearOS2.Commands
         internal Debug() : base
             ("Debug", "Provides debugging options",
             new Command[] {
-            new Command(new string[] { "debug"}, "Switches between debug states."),
-            new Command(new string[] { "anim"}, "Animation Debug"),
-            new Command(new string[] { "err"}, "Crash specific level of system.", new string[] { "/c - Crash Command execution", "/s - Crash Command Shell client", "/k - Check Kernel error handling", "/xk - Exploit Kernel error handling"})
+            new Command(new string[] { "debug"}, "Switches between debug states.", new string[] { "true", "false" }),
+            new Command(new string[] { "err"}, "Crash specific level of system.", new string[] { "/c - Crash Command execution", "/s - Crash Command Shell", "/sc - Crash Command Shell client", "/k - Check Kernel error handling", "/xk - Exploit Kernel error handling"})
             })
         {
         }
-        internal override int Execute(string[] args, CommandShell shell, string rawInput)
+        internal override int Execute(string[] args, string rawInput, CommandShell shell)
         {
             switch (args[0])
             {
-                case "anim":
-                    ProcessManager.Run(new AnimationDebug());
-                    return 0;
                 case "debug":
-                    Kernel.Debug = !Kernel.Debug;
+                    if(args.Length == 1) { Kernel.Debug = !Kernel.Debug; }
+                    else { Kernel.Debug = args[1] == "true"; }
                     shell.Print = "Debug: " + Kernel.Debug;
                     return 0;
                 case "err":
@@ -421,12 +425,10 @@ namespace NclearOS2.Commands
                         {
                             case "/c":
                                 throw new Exception("Manual crash");
-                            /*case "/s":
-                                if(shell == null) { return 0; }
-                                shell.crashShell = shell.CrashShell;
-                                shell.crashShell.Invoke();
-                                return 0;*/
                             case "/s":
+                                if(shell == null) { return 0; }
+                                throw new Exception("system/Crash_Console_Shell");
+                            case "/sc":
                                 shell.crashClient?.Invoke();
                                 shell.Print = "If you are seeing this, Console Shell client does not include debugging functions.";
                                 return 0;
@@ -460,7 +462,7 @@ namespace NclearOS2.Commands
             })
         {
         }
-        internal override int Execute(string[] args, CommandShell shell, string rawInput)
+        internal override int Execute(string[] args, string rawInput, CommandShell shell)
         {
             if (args[0] == "about" || args[0] == "info")
             {
@@ -469,7 +471,7 @@ namespace NclearOS2.Commands
                     "__   |/ /_  ___/_  /_  _ \\  __ `/_  ___/  / / /____ \\\n" +
                     "_  /|  / / /__ _  / /  __/ /_/ /_  /   / /_/ /____/ /\n" +
                     "/_/ |_/  \\___/ /_/  \\___/\\__,_/ /_/    \\____/ /____/\n" +
-                    Kernel.OSVERSION + "\n\nBased on CosmosOS" + "\nCreated by Nclear\nGithub: https://github.com/Ncleardev/NclearOS-2 \nWebsite: https://ncleardev.github.io/nclearos";
+                    Kernel.OSVERSION + "\n\nBased on CosmosOS" + "\nCreated by Ncleardev\nGithub: https://github.com/Ncleardev/NclearOS-2 \nWebsite: https://ncleardev.github.io/nclearos";
                 return 0;
             }
             else if (args[0] == "ver" || args[0] == "version")

@@ -20,8 +20,39 @@ namespace NclearOS2.GUI
             get { return opened; }
             set
             {
-                if (value) { openingOrOpened = true; Animation.Running.Add(new(menuBitmap, Animation.Property.TranslationY, (short)(GUI.ScreenY-30-menuBitmap.Height), (short)GUI.ScreenY, 50, 0, new(() => { opened = value; GUI.canvas.DrawImage(menuBitmap, 0, (int)GUI.ScreenY - 340); }))); }
-                else { opened = openingOrOpened = powerMenu = false; GUI.canvas.DrawImage(menuBitmap, 0, (int)GUI.ScreenY - 340); Animation.Running.Add(new(menuBitmap, Animation.Property.TranslationY, (short)GUI.ScreenY, (short)(GUI.ScreenY - 30 - menuBitmap.Height), 50)); }
+                int yHidden = (int)GUI.ScreenY;
+                int yVisible = (int)(GUI.ScreenY - 30 - menuBitmap.Height);
+
+                if (value)
+                {
+                    openingOrOpened = true;
+
+                    Animation2.Animate(menuBitmap)
+                        .StartAt(0, yHidden)
+                        .MoveTo(0, yVisible) 
+                        .SetDuration(200)
+                        .WithEndAction(() =>
+                        {
+                            opened = true;
+                            GUI.canvas.DrawImage(menuBitmap, 0, yVisible);
+                        })
+                        .Start();
+                }
+                else
+                {
+                    powerMenu = false;
+
+                    Animation2.Animate(menuBitmap)
+                        .StartAt(0, yVisible)  
+                        .SetInterpolator(Animator2.InterpolationMode.EaseIn)
+                        .MoveTo(0, yHidden)
+                        .SetDuration(150)
+                        .WithStartAction(() => {
+                            opened = false;
+                            openingOrOpened = false;
+                        })
+                        .Start();
+                }
             }
         }
         private static bool opened;
@@ -68,7 +99,7 @@ namespace NclearOS2.GUI
         {
             GUI.canvas.DrawImage(bar, 0, (int)GUI.ScreenY - 30);
             GUI.canvas.DrawString(NclearOS2.Date.CurrentTime(true), GUI.font, GUI.WhitePen, (int)GUI.ScreenX - 70, (int)GUI.ScreenY - 20);
-            if (Kernel.useNetwork) { GUI.canvas.DrawImageAlpha(Icons.connected, (int)GUI.ScreenX - 100, (int)GUI.ScreenY - 26); }
+            if (Kernel.networkConnected) { GUI.canvas.DrawImageAlpha(Icons.connected, (int)GUI.ScreenX - 100, (int)GUI.ScreenY - 26); }
             byte j = 0;
             for (byte i = 0; i < ProcessManager.running.Count; i++)
             {
@@ -95,7 +126,7 @@ namespace NclearOS2.GUI
                     if (GUI.Pressed) { ProcessManager.Run(new Date()); }
                     else { GUI.canvas.DrawString(NclearOS2.Date.CurrentDate(true, false), GUI.font, GUI.WhitePen, (int)GUI.ScreenX - 200, (int)GUI.ScreenY - 45); }
                 }
-                else if (Kernel.useNetwork && MouseManager.X > (int)GUI.ScreenX - 100)
+                else if (Kernel.networkConnected && MouseManager.X > (int)GUI.ScreenX - 100)
                 {
                     if (!Opened) { GUI.canvas.DrawImageAlpha(start, 5, (int)GUI.ScreenY - 27); }
                     if (GUI.Pressed) { }
@@ -157,7 +188,12 @@ namespace NclearOS2.GUI
                         if (MouseManager.Y < (int)GUI.ScreenY - 30 && MouseManager.Y > (int)GUI.ScreenY - 60)
                         {
                             if (MouseManager.X < 37) { powerMenu = !powerMenu; }
-                            else if (MouseManager.X < 67) { Opened = false; GUI.Lock = true; }
+                            else if (MouseManager.X < 67) {
+                                opened = false;
+                                openingOrOpened = false;
+                                powerMenu = false;
+                                GUI.Lock = true;
+                            }
                         }
                         if(powerMenu)
                         {

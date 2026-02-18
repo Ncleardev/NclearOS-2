@@ -23,7 +23,8 @@ namespace NclearOS2.GUI
                 GUI.DisplayCursor = false;
                 i = true;
             }
-            if (KeyboardManager.TryReadKey(out KeyEvent keyEvent) || GUI.Pressed)
+
+            if (KeyboardManager.TryReadKey(out _) || GUI.Pressed)
             {
                 i = false;
                 GUI.screenSaver = false;

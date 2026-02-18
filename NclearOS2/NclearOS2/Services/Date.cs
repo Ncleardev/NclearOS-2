@@ -150,7 +150,7 @@ namespace NclearOS2.Commands
             })
         {
         }
-        internal override int Execute(string[] args, CommandShell shell, string rawInput)
+        internal override int Execute(string[] args, string rawInput, CommandShell shell)
         {
             if (args[0] == "time" || args[0] == "date")
             {

@@ -159,7 +159,7 @@ namespace NclearOS2.GUI
                                 case "BMP":
                                     byte[] data = F.OpenInBytes(pathToOpen);
                                     //Toast.Debug("Success; " + data.Length);
-                                    Images.RequestSystemWallpaperChange(new Bitmap(data));
+                                    Images.systemWallpaper = new Bitmap(data);
                                     GUI.ApplyRes();
                                     break;
                                 default:
@@ -196,8 +196,7 @@ namespace NclearOS2.GUI
                 GUI.Refresh();
                 if(CD == "Computer" && selY != -1 && x < 70)
                 {
-                    F.Format(Convert.ToInt32(listresult[selY][1].Split(':')[0]));
-                    
+                    if (F.Format(Convert.ToInt32(listresult[selY][1].Split(':')[0]))) Exit();
                 }
                 else if(x < 25)
                 {

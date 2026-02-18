@@ -110,7 +110,7 @@ namespace NclearOS2
         {
             if(shell == null)
             {
-                shell = new CommandShell { crashClient = ExecuteError, update = Result, clearScreen = Clear };
+                shell = new CommandShell { crashClient = ExecuteError, update = Result, clearScreen = Clear, exit = ExitConsole };
                 Console.ResetColor();
                 Console.ForegroundColor = ConsoleColor.Green;
                 Console.Clear();
@@ -118,9 +118,13 @@ namespace NclearOS2
                 //Console.CursorVisible = true;
                 Console.WriteLine(Kernel.OSVERSION + "\n");
             }
-            try { if (shell.Execute(Input()) == 2) { shell.Print += "Wrong parameter"; } }
-            catch (Exception e) { shell = null; Console.WriteLine("Command Shell crashed: " + e.Message + "; Press Enter to restart."); Console.ReadLine(); }
+            try { if (shell.Execute(Input()) == 2) { shell.Print += "Wrong parameters usage, use 'help [command]' for a list of available parameters."; } }
+            catch (Exception e) { shell = null; Clear(); Console.WriteLine("Command Shell crashed: " + e.Message + "; Press Enter to restart."); Console.ReadLine(); }
             Heap.Collect();
+        }
+        private static void ExitConsole()
+        {
+            shell = null; Clear(); Console.WriteLine("Command Shell closed; Press Enter to restart."); Console.ReadLine();
         }
         private static void ExecuteError()
         {

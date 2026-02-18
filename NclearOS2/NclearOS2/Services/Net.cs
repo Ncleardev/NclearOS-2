@@ -12,18 +12,17 @@ namespace NclearOS2
         public static void Start()
         {
             Kernel.useNetwork = true;
-            if (Kernel.GUIenabled) { GUI.ProcessManager.Run(new GUI.Net()); }
             networkDevice = NetworkDevice.GetDeviceByName("eth0");
             IPConfig.Enable(networkDevice, new Address(192, 168, 0, 1), new Address(255, 255, 255, 0), new Address(192, 168, 1, 254));
             if (NetworkConfiguration.CurrentAddress != null)
             {
-                Kernel.useNetwork = true;
+                Kernel.networkConnected = true;
             }
+            if (Kernel.GUIenabled) { GUI.ProcessManager.Run(new GUI.Net()); }
         }
         public static string GetInfo()
         {
-            if (!Kernel.useNetwork) { Start(); }
-            return "Local IP Address: " + NetworkConfiguration.CurrentAddress.ToString();
+            return Kernel.networkConnected ? "Local IP Address: " + NetworkConfiguration.CurrentAddress.ToString() : "Network disconnected";
         }
     }
 }
@@ -34,18 +33,18 @@ namespace NclearOS2.GUI
         public Net() : base("Network Service", ProcessManager.Priority.None) { }
         internal override int Start()
         {
-            if (NetworkConfiguration.CurrentAddress != null)
-            {
-                Kernel.useNetwork = true;
-                Notify("Connected to Network", Icons.info);
-            }
+            if (Kernel.networkConnected) { Notify("Connected to Network", Icons.info); }
             return 0;
         }
         internal override void Update()
         {
             //Kernel.useNetwork = NetworkConfiguration.CurrentAddress != null;
         }
-        internal override int Stop(bool f) { Kernel.useNetwork = false; return 0; }
+        internal override int Stop(bool f) {
+            Kernel.networkConnected = false;
+            Kernel.useNetwork = false;
+            return 0;
+        }
     }
 }
 namespace NclearOS2.Commands
@@ -60,7 +59,7 @@ namespace NclearOS2.Commands
             })
         {
         }
-        internal override int Execute(string[] args, CommandShell shell, string rawInput)
+        internal override int Execute(string[] args, string rawInput, CommandShell shell)
         {
             switch (args[0])
             {

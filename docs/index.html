@@ -13,109 +13,89 @@
 
 <body>
     <div class="topnav">
-        <titletext style="float:right; margin-right: 10px; margin-top: 5px;">NclearOS 2
-        </titletext>
+        <text id="smallTitle">NclearOS 2</text>
         <a href="#download">Download</a>
         <a href="#about">Features</a>
         <a href="#help">FAQ</a>
     </div>
     <img src="https://raw.githubusercontent.com/Ncleardev/NclearOS-2/main/Screenshots/WallpaperNew.png" id="main" alt="Welcome image">
-    <div class="center" style="transform: translateY(-20vw);">
-        <text>
-            <div class="center" id="download"><a href="https://www.gocosmos.org/" target="_blank">Cosmos</a><b> based
-                    Operating System</b></div>
-            <div class="center" style="margin-top: 20vw; margin-bottom: 20px;"><a
-                    href="https://github.com/Ncleardev/NclearOS-2/releases/latest" class="glowL"
-                    target="_blank">Download</a><a href="https://github.com/Ncleardev/NclearOS-2/" class="glowR"
-                    target="_blank">Source Code</a>
+    <div class="center" style="padding-top: 40vw;">
+        <div class="center" id="download"><a href="https://www.gocosmos.org/" target="_blank">Cosmos</a><b> based Operating System</b></div>
+        <div class="center"><a href="https://github.com/Ncleardev/NclearOS-2/releases/latest" class="glowL" target="_blank">Download</a><a href="https://github.com/Ncleardev/NclearOS-2/" class="glowR" target="_blank">Source Code</a>
+        </div>
+        <h5>Legacy <a href="https://ncleardev.github.io/nclearos-legacy" target="_blank">NclearOS</a> also available</h5>
+        <div class="center"><img src="https://raw.githubusercontent.com/Ncleardev/NclearOS-2/main/Screenshots/1.png" id="gallery" alt="NclearOS 2 screenshot">
+        </div>
+        <br><br>
+        <ul id="about">
+            <li class="card">Graphical user interface</li>
+            <li class="card">Multitasking</li>
+            <li class="card">Powerful Command System</li>
+            <li class="card">Filesystem</li>
+            <li class="card">Text Editor</li>
+            <li class="card">Blur effects</li>
+            <li class="card">Personalization</li>
+            <li class="card">Text (Console) Mode</li>
+            <li class="card">Performance Watchdog</li>
+            <li class="card">Screensaver</li>
+            <li class="card">Advanced startup options and safe mode</li>
+        </ul><br><br>
+        <div class="center"><iframe width="730" height="400" style="max-width: 90%;" src="https://www.youtube.com/embed/i4AV2RgCoIE?list=PLjuew_ibisGV2tB8to_ESzlDNQwBTE6yk" title="NclearOS 2 - operating system created in C# (CosmosOS)" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+        </div><br><br>
+        <div class="center" id="help">
+            <text>
+                <button class="accordion">System Requriments for NclearOS 2</button>
+                <div class="panel">
+                    CPU: x86<br>
+                    RAM: Minimum 256 MB, Recommended 512 MB<br>
+                    Graphics: Minimum VGA, Recommended SVGA<br>
+                    A bootable Pendrive / Optical Disk<br>
+                    Mouse and USB Keyboard (laptop built-in keyboard may not work)
+                </div><br>
+                <button class="accordion">Running NclearOS 2 on VMware</button>
+                <div class="panel">
+                    1. Download the <a target="_blank" href="https://github.com/Ncleardev/NclearOS-2/releases/latest">NclearOS2</a>
+                    .iso file from GitHub<br>
+                    2. Launch VMware Player/Workstation.<br>
+                    3. Create new VM and select NclearOS2.iso file.<br>
+                    4. Start virtual machine.<br>
+
+                    If you want OS to work with files download <a target="_blank" href="https://github.com/CosmosOS/Cosmos/blob/master/Build/VMWare/Workstation/Filesystem.vmdk?raw=true">.vmdk
+                        file</a> and use it as a hard disk in VM options.
+                </div><br>
+                <button class="accordion">Running NclearOS 2 on VirtualBox</button>
+                <div class="panel">
+                    1. Download the <a target="_blank" href="https://github.com/Ncleardev/NclearOS-2/releases/latest">NclearOS2</a>
+                    .iso file from GitHub<br>
+                    2. Launch VirtualBox.<br>
+                    3. Create new VM and select NclearOS2.iso file.<br>
+                    4. Start virtual machine.<br>
+                    If you want OS to work with files create new .vhd Virtual Hard Disk file using Virtual Media
+                    Manager in
+                    VirtualBox. Then you need to format it using FAT32 filesystem - one way to do it is by using
+                    Windows built-in
+                    Disk
+                    Management: from top left corner select Action>Attach VHD. Choose VHD file created by
+                    VirtualBox. Initialize it by selecting MBR and add new simple volume.
+                    Detach VHD, run VM and format new disk in NclearOS.
+                </div><br>
+                <button class="accordion">Editing NclearOS source code</button>
+                <div class="panel">
+                    <a target="_blank" href="https://github.com/Ncleardev/NclearOS-2/blob/main/LICENSE">This project is licensed under the terms of the MIT license.</a>
+                    <br><br>
+                    To edit the source code:<br>
+                    1. Make sure Visual Studio and <a href="https://github.com/CosmosOS/Cosmos/releases/tag/UserKit_20221121">Cosmos User Kit 20221121</a> are installed.<br>
+                    2. Download <a target="_blank" href="https://github.com/Ncleardev/NclearOS-2/archive/refs/heads/main.zip">NclearOS2</a>
+                    source code.<br>
+                    3. Extract downloaded .zip and open .sln file located in folder NclearOS2.
                 </div>
-            <h5>Legacy <a href="https://ncleardev.github.io/nclearos-legacy" target="_blank">NclearOS</a> also available</h5>
-            <div class="center" id="about"><img src="https://raw.githubusercontent.com/Ncleardev/NclearOS-2/main/Screenshots/1.png" id="gallery" alt="NclearOS 2 screenshot">
-            </div>
-            <br><br>
-            <ul>
-                <li class="card">Graphical user interface</li>
-                <li class="card">Multitasking</li>
-                <li class="card">Powerful Command System</li>
-                <li class="card">Filesystem</li>
-                <li class="card">Text Editor</li>
-                <li class="card">Blur effects</li>
-                <li class="card">Personalization</li>
-                <li class="card">Text (Console) Mode</li>
-                <li class="card">Performance Watchdog</li>
-                <li class="card">Screensaver</li>
-                <li class="card">Advanced startup options and safe mode</li>
-            </ul><br><br>
-            <div class="center">
-                <iframe width="730" height="400" style="max-width: 90%;"
-                    src="https://www.youtube.com/embed/UVwGqHL1org?si=vChjkLVqamzdq7A9" title="YouTube video player" frameborder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen>
-                </iframe>
-            </div><br><br>
-            <div class="center" id="help">
-                <text>
-                    <button class="accordion">System Requriments for NclearOS 2</button>
-                    <div class="panel">
-                        CPU: x86<br>
-                        RAM: Minimum 256 MB, Recommended 512 MB<br>
-                        Graphics: Minimum VGA, Recommended SVGA<br>
-                        A bootable Pendrive / Optical Disk<br>
-                        Mouse and USB Keyboard (laptop built-in keyboard may not work)
-                    </div><br>
-                    <button class="accordion">Running NclearOS 2 on VMware</button>
-                    <div class="panel">
-                        1. Download the <a target="_blank"
-                            href="https://github.com/Ncleardev/NclearOS-2/releases/latest">NclearOS2</a>
-                        .iso file from GitHub<br>
-                        2. Launch VMware Player/Workstation.<br>
-                        3. Proceed with steps provided on <a target="_blank"
-                            href="https://kb.vmware.com/s/article/1002">this
-                            site</a><br>
-                        4. Start virtual machine.<br>
-                        <b>At the moment 0.4.0 Pre-release doesn't support Filesystem.</b><br>
-                        If you want OS to work with files download <a target="_blank"
-                            href="https://github.com/CosmosOS/Cosmos/blob/master/Build/VMWare/Workstation/Filesystem.vmdk?raw=true">.vmdk
-                            file</a> and use it as a hard disk in VM options.
-                    </div><br>
-                    <button class="accordion">Running NclearOS 2 on VirtualBox</button>
-                    <div class="panel">
-                        1. Download the <a target="_blank"
-                            href="https://github.com/Ncleardev/NclearOS-2/releases/latest">NclearOS2</a>
-                        .iso file from GitHub<br>
-                        2. Launch VirtualBox.<br>
-                        3. Proceed with steps provided on <a target="_blank"
-                            href="https://www.virtualbox.org/manual/UserManual.html#create-vm-wizard">this site</a><br>
-                        4. Start virtual machine.<br>
-                        <b>At the moment 0.4.0 Pre-release doesn't support Filesystem.</b><br>
-                        If you want OS to work with files create new .vhd Virtual Hard Disk file using Virtual Media
-                        Manager in
-                        VirtualBox. Then you need to format it using FAT32 filesystem - one way to do it is by using
-                        Windows built-in
-                        Disk
-                        Management: from top left corner select Action>Attach VHD. Choose VHD file created by
-                        VirtualBox. Initialize it by selecting MBR and add new simple volume.
-                        Detach VHD, run VM and format new disk in NclearOS.
-                    </div><br>
-                    <button class="accordion">Editing NclearOS source code</button>
-                    <div class="panel">
-                        <a target="_blank" href="https://github.com/Ncleardev/NclearOS-2/blob/main/LICENSE">This project is licensed under the terms of the MIT license.</a>
-                        <br><br>
-                        To edit the source code:<br>
-                        1. Make sure Visual Studio and <a href="https://github.com/CosmosOS/Cosmos/releases/tag/UserKit_20221121">Cosmos User Kit 20221121</a> are installed.<br>
-                        2. Download <a target="_blank"
-                            href="https://github.com/Ncleardev/NclearOS-2/archive/refs/heads/main.zip">NclearOS2</a>
-                        source code.<br>
-                        3. Extract downloaded .zip and open .sln file located in folder NclearOS2.
-                    </div>
-                </text>
-            </div>
-            <br><br>
-            <p><a href="https://ncleardev.github.io/" target="_blank">Nclear</a></p>
-            <a href="#main"
-                style="text-decoration: none; float: right; background-color: rgba(255, 255, 255, 0.5); padding-left: 15px; padding-right: 15px; padding-top: 10px; padding-bottom: 10px; border-radius: 50%; margin-right: 30px;">/\</a>
-        </text>
+            </text>
+        </div>
+        <br><br>
+        <p><a href="https://ncleardev.github.io/" target="_blank">Nclear</a></p>
     </div>
 </body>
+
 </html>
 <script>
     var acc = document.getElementsByClassName("accordion");
@@ -133,5 +113,3 @@
         });
     }
 </script>
-
-

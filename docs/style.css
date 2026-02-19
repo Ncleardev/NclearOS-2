@@ -7,7 +7,7 @@ body {
   text-shadow: 0 0 10px white;
 }
 
-html{
+html {
   scroll-behavior: smooth;
 }
 
@@ -32,9 +32,11 @@ a:active {
 #main {
   width: 100%;
   z-index: -1;
+  transform: translateY(-50px);
+  position: absolute;
 }
 
-text,
+.center,
 a,
 marquee,
 b,
@@ -42,7 +44,7 @@ img,
 h5,
 .topnav {
   text-align: center;
-  animation: q 2s linear;
+  animation: q 1s linear;
   word-wrap: break-word;
   max-width: 100%;
 }
@@ -52,7 +54,7 @@ h5,
     opacity: 0;
   }
 
-  70% {
+  40% {
     opacity: 0;
   }
 
@@ -68,11 +70,12 @@ h5,
   color: white;
   text-shadow: 0 0 10px white;
 
-  transition: 0.4s all;
+  transition: 0.2s all;
 }
 
-.topnav a:hover {
+.topnav a:active {
   transform: translate(2px, 2px);
+  transition: 0s transform;
 }
 
 .glowR:hover {
@@ -109,7 +112,30 @@ h5,
   color: black;
   text-align: center;
   padding: 10px 10px;
-  transition: 0.4s all;
+  transition: 0.2s all;
+}
+
+#smallTitle {
+  float: right;
+  margin-right: 10px;
+  margin-top: 8px;
+}
+
+@media only screen and (max-width: 500px) {
+  .topnav a {
+    font-size: 16px;
+  }
+
+  #smallTitle {
+    margin-top: 10px;
+    font-size: 16px;
+  }
+}
+
+@media only screen and (max-width: 900px) {
+  #main {
+    transform: translateY(0);
+  }
 }
 
 .glowL,
@@ -170,7 +196,7 @@ h5,
   transition: max-height 0.5s ease;
 }
 
-ul{
+ul {
   width: min(90%, 50rem);
   margin: auto;
   list-style: none;
@@ -178,7 +204,7 @@ ul{
   row-gap: 1.5rem;
 }
 
-ul li.card{
+ul li.card {
   position: relative;
   padding: 1rem;
   background-image: linear-gradient(to right, rgba(255, 255, 255, 0.5), transparent);
@@ -186,7 +212,12 @@ ul li.card{
   transition: 0.2s all;
 }
 
-ul li.card:hover, ul li.card2:hover{
+ul li.card:hover,
+ul li.card2:hover {
   background-color: rgba(255, 255, 255, 0.3);
   transition: 0.2s all;
+}
+
+#download {
+  padding-bottom: 20px;
 }
